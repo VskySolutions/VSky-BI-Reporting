@@ -1,0 +1,1836 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>f44b30f7-96e1-465e-b808-f89f3901af3d</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1814.616</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T17:04:39.8396431Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="MeldepLiveV32">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=Meldep_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source MeldepLiveV32:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>30942a1d-3654-49e3-80a2-cd1a071504c9</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="WeeklyPlannerCheck">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@year">
+            <Value>=Parameters!Year.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Month">
+            <Value>=Parameters!Month.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CustomerName">
+            <Value>=Parameters!CustomerName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectStatus">
+            <Value>=Parameters!ProjectStatus.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectType">
+            <Value>=Parameters!ProjectType.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectPriority">
+            <Value>=Parameters!ProjectPriority.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectCategory">
+            <Value>=Parameters!ProjectCategory.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectSubcategory">
+            <Value>=Parameters!ProjectSubcategory.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandType>StoredProcedure</CommandType>
+        <CommandText>sp_BI_Project_WeeklyPlan_DataQualityCheck</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="WeekDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>WeekDate</DataField>
+        </Field>
+        <Field Name="Year">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Year</DataField>
+        </Field>
+        <Field Name="Month">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Month</DataField>
+        </Field>
+        <Field Name="MonthName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>MonthName</DataField>
+        </Field>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="ProjectName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectName</DataField>
+        </Field>
+        <Field Name="ActiveStatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>ActiveStatusId</DataField>
+        </Field>
+        <Field Name="ActiveStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActiveStatus</DataField>
+        </Field>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+        <Field Name="IsPlannedFilled">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>IsPlannedFilled</DataField>
+        </Field>
+        <Field Name="IsActualFilled">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>IsActualFilled</DataField>
+        </Field>
+        <Field Name="ProjectType">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectType</DataField>
+        </Field>
+        <Field Name="ProjectCategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectCategory</DataField>
+        </Field>
+        <Field Name="ProjectSubcategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectSubcategory</DataField>
+        </Field>
+        <Field Name="ProjectStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatus</DataField>
+        </Field>
+        <Field Name="ProjectPriority">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectPriority</DataField>
+        </Field>
+        <Field Name="modifiedstatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>modifiedstatus</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="YearDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>SELECT DISTINCT 
+    YEAR(PWPD.WeekDate) AS Year
+FROM Project_WeeklyPlan_Dates PWPD
+ORDER BY Year DESC</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Year">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Year</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="MonthDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>SELECT 
+    DISTINCT MONTH(pwd.WeekDate) AS MonthNumber,
+    DATENAME(MONTH, DATEFROMPARTS(2000, MONTH(pwd.WeekDate), 1)) AS MonthName
+FROM Project_WeeklyPlan_Dates pwd
+ORDER BY Monthnumber</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="MonthNumber">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>MonthNumber</DataField>
+        </Field>
+        <Field Name="MonthName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>MonthName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="WeekEndDateDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Year">
+            <Value>=Parameters!Year.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Month">
+            <Value>=Parameters!Month.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH Tally AS (
+    SELECT TOP (31) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
+    FROM sys.all_objects
+)
+SELECT 
+    CAST(DATEADD(DAY, n, DATEFROMPARTS(@Year, @Month, 1)) AS DATE) AS WeekEndDateValue,
+    FORMAT(DATEADD(DAY, n, DATEFROMPARTS(@Year, @Month, 1)), 'MM-dd-yyyy') AS WeekEndDateLabel
+FROM Tally
+WHERE 
+    DATENAME(WEEKDAY, DATEADD(DAY, n, DATEFROMPARTS(@Year, @Month, 1))) = 'Sunday'
+    AND MONTH(DATEADD(DAY, n, DATEFROMPARTS(@Year, @Month, 1))) = @Month</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="WeekEndDateValue">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>WeekEndDateValue</DataField>
+        </Field>
+        <Field Name="WeekEndDateLabel">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>WeekEndDateLabel</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectActiveStatusDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>SELECT DISTINCT
+                CASE 
+		WHEN P.Active=1 THEN 1
+		WHEN P.Active=0 THEN 0
+	END AS StatusId,
+	CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status
+FROM Projects P
+WHERE
+	P.Deleted!=1 
+ORDER BY Status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CustomerDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ProjectActiveStatus">
+            <Value>=Parameters!ProjectActiveStatus.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH ProjectDetailsList AS (
+    SELECT DISTINCT
+        CASE 
+            WHEN P.Active = 1 THEN 1
+            ELSE 0
+        END AS StatusId,
+        CASE 
+            WHEN P.Active = 1 THEN 'Active'
+            ELSE 'Inactive'
+        END AS Status,
+        CPL.CustomerId,
+		C.CustomerName
+    FROM Projects P
+JOIN ProjectActivities pa on pa.projectid=p.id and pa.deleted!=1
+    JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
+	JOIN  VW_CustomerList C ON C.Id=CPL.CustomerId
+    WHERE P.Deleted != 1
+)
+SELECT PD.CustomerId, PD.CustomerName
+FROM ProjectDetailsList PD
+WHERE PD.StatusId IN (@ProjectActiveStatus)
+ORDER BY CustomerName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ProjectActiveStatus">
+            <Value>=Parameters!ProjectActiveStatus.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CustomerName">
+            <Value>=Parameters!CustomerName.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH ProjectDetailsList AS (
+    SELECT DISTINCT
+        P.Id AS ProjectId,
+        P.[Name] AS Project,
+        CASE 
+            WHEN P.Active = 1 THEN 1
+            ELSE 0
+        END AS StatusId,
+        CASE 
+            WHEN P.Active = 1 THEN 'Active'
+            ELSE 'Inactive'
+        END AS Status,
+        CPL.CustomerId
+    FROM Projects P
+    JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
+    WHERE P.Deleted != 1
+)
+SELECT PD.ProjectId, PD.Project
+FROM ProjectDetailsList PD
+WHERE PD.StatusId IN (@ProjectActiveStatus) and PD.CustomerId IN (@CustomerName)
+ORDER BY Project</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="Project">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectStatusDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>select 
+	dd.id as projectstatusid,
+	dd.dropdownvalue as projectstatus
+from dropdown dd
+left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
+where dd.deleted!=1
+and ddt.type='Project Status'
+order by projectstatus</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="projectstatusid">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectstatusid</DataField>
+        </Field>
+        <Field Name="projectstatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectstatus</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectPriorityDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>select 
+	dd.id as projectpriorityid,
+	dd.dropdownvalue as projectpriority
+from dropdown dd
+left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
+where dd.deleted!=1
+and ddt.type='Project Priorities'
+order by projectpriority</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="projectpriorityid">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectpriorityid</DataField>
+        </Field>
+        <Field Name="projectpriority">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectpriority</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectTypeDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>select 
+	dd.id as projecttypeid,
+	dd.dropdownvalue as projecttype
+from dropdown dd
+left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
+where dd.deleted!=1
+and ddt.type='Project Type'
+order by projecttype</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="projecttypeid">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projecttypeid</DataField>
+        </Field>
+        <Field Name="projecttype">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projecttype</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectCategoryDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT ''as projectcategoryid,
+'NA' AS projectcategory
+UNION 
+SELECT
+	ddt.id as projectcategoryid,
+	ddt.Type as projectcategory
+FROM DropDownType ddt 
+Where ddt.Groupname='ProjectCategory'
+and ddt.deleted!=1</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectCategoryId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectcategoryid</DataField>
+        </Field>
+        <Field Name="projectcategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>projectcategory</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectSubCategoryDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ProjectCategory">
+            <Value>=Parameters!ProjectCategory.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>--select ''as projectsubcategoryid,
+--'NA' AS projectsubcategory
+--UNION
+--select 
+--	dd.id as projectsubcategoryid,
+--	dd.dropdownvalue as projectsubcategory
+--from dropdown dd
+--left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
+--where dd.deleted!=1
+--and ddt.type='Project Subcategory'
+--order by projectsubcategory
+
+
+select ''as SubCategoryId,
+           'NA' AS Subcategory 
+UNION 
+SELECT DISTINCT 
+       CAST(dd.Id AS VARCHAR(50)) AS SubCategoryId, 
+     dd.DropDownValue as Subcategory
+FROM DropDownType ddt LEFT JOIN DropDown dd
+           ON ddt.Id = dd.DropDownTypeId 
+WHERE ddt.GroupName = 'ProjectCategory' 
+            --AND ddt.Deleted != 1 
+           AND ddt.Id IN (@ProjectCategory) 
+ORDER BY Subcategory</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="SubCategoryId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>SubCategoryId</DataField>
+        </Field>
+        <Field Name="Subcategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Subcategory</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="MonthlyPlannerCheck">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@year">
+            <Value>=Parameters!Year.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Month">
+            <Value>=Parameters!Month.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CustomerName">
+            <Value>=Parameters!CustomerName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectStatus">
+            <Value>=Parameters!ProjectStatus.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectType">
+            <Value>=Parameters!ProjectType.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectPriority">
+            <Value>=Parameters!ProjectPriority.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectCategory">
+            <Value>=Parameters!ProjectCategory.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectSubcategory">
+            <Value>=Parameters!ProjectSubcategory.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandType>StoredProcedure</CommandType>
+        <CommandText>sp_BI_Project_MonthlyPlan_DataQualityCheck</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Year">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Year</DataField>
+        </Field>
+        <Field Name="Month">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Month</DataField>
+        </Field>
+        <Field Name="MonthName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>MonthName</DataField>
+        </Field>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="ProjectName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectName</DataField>
+        </Field>
+        <Field Name="ActiveStatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>ActiveStatusId</DataField>
+        </Field>
+        <Field Name="ActiveStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActiveStatus</DataField>
+        </Field>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+        <Field Name="IsPlannedFilled">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>IsPlannedFilled</DataField>
+        </Field>
+        <Field Name="IsActualFilled">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>IsActualFilled</DataField>
+        </Field>
+        <Field Name="ProjectType">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectType</DataField>
+        </Field>
+        <Field Name="ProjectCategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectCategory</DataField>
+        </Field>
+        <Field Name="ProjectSubcategory">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectSubcategory</DataField>
+        </Field>
+        <Field Name="ProjectStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatus</DataField>
+        </Field>
+        <Field Name="ProjectPriority">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectPriority</DataField>
+        </Field>
+        <Field Name="ColumnValue">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ColumnValue</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="ReportTitle">
+            <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+            <rd:DefaultName>ReportTitle</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>=IIF(Parameters!SelectView.Value="week","Weekly Planner Data Quality Check","Monthly Planner Data Quality Check")</Value>
+                    <Style>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>14pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>0mm</Top>
+            <Height>6.61458mm</Height>
+            <Width>139.7mm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Tablix Name="Tablix3">
+            <TablixCorner>
+              <TablixCornerRows>
+                <TablixCornerRow>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox5">
+                        <rd:DefaultName>Textbox5</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Project Name</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                      <RowSpan>3</RowSpan>
+                    </CellContents>
+                  </TablixCornerCell>
+                </TablixCornerRow>
+                <TablixCornerRow>
+                  <TablixCornerCell />
+                </TablixCornerRow>
+                <TablixCornerRow>
+                  <TablixCornerCell />
+                </TablixCornerRow>
+              </TablixCornerRows>
+            </TablixCorner>
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>15.875mm</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>15.875mm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>5.55625mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="IsPlannedFilled">
+                          <rd:DefaultName>IsPlannedFilled</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!IsPlannedFilled.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <Color>=IIF(Fields!IsPlannedFilled.Value="Yes","Green",
+IIF(Fields!IsPlannedFilled.Value="No","Red","Black"))</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Top</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="IsActualFilled">
+                          <rd:DefaultName>IsActualFilled</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!IsActualFilled.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <Color>=IIF(Fields!IsActualFilled.Value="Yes","Green",
+IIF(Fields!IsActualFilled.Value="No","Red","Black"))</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>5.73542mm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox6">
+                        <rd:DefaultName>Textbox6</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Week End Date</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="WeekEndDate">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!WeekDate.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!WeekDate.Value</Value>
+                          <Direction>Descending</Direction>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>5.47083mm</Size>
+                            <CellContents>
+                              <Textbox Name="WeekDate">
+                                <rd:DefaultName>WeekDate</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Format(Fields!WeekDate.Value, "MM-dd-yy")</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>=iif(Code.GetColCounter() MOD 2=0,"#f2d6dc","#f5e4c3")</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>5.55625mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox29">
+                                    <rd:DefaultName>Textbox29</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Planned</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#ffe0b3</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                            </TablixMember>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>5.55625mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox51">
+                                    <rd:DefaultName>Textbox51</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Actual</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#cce5cc</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="ProjectName">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!ProjectName.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!ProjectName.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>44.45mm</Size>
+                    <CellContents>
+                      <Textbox Name="ProjectName">
+                        <rd:DefaultName>ProjectName</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!ProjectName.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#e5ffff</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <RepeatColumnHeaders>true</RepeatColumnHeaders>
+            <RepeatRowHeaders>true</RepeatRowHeaders>
+            <FixedColumnHeaders>true</FixedColumnHeaders>
+            <FixedRowHeaders>true</FixedRowHeaders>
+            <DataSetName>WeeklyPlannerCheck</DataSetName>
+            <Top>17.72708mm</Top>
+            <Left>0mm</Left>
+            <Height>22.31875mm</Height>
+            <Width>76.2mm</Width>
+            <ZIndex>1</ZIndex>
+            <Visibility>
+              <Hidden>=IIF(Parameters!SelectView.Value="week",false,true)</Hidden>
+            </Visibility>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+          <Tablix Name="Tablix4">
+            <TablixCorner>
+              <TablixCornerRows>
+                <TablixCornerRow>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox8">
+                        <rd:DefaultName>Textbox5</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Project Name</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                      <RowSpan>3</RowSpan>
+                    </CellContents>
+                  </TablixCornerCell>
+                </TablixCornerRow>
+                <TablixCornerRow>
+                  <TablixCornerCell />
+                </TablixCornerRow>
+                <TablixCornerRow>
+                  <TablixCornerCell />
+                </TablixCornerRow>
+              </TablixCornerRows>
+            </TablixCorner>
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>15.875mm</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>15.875mm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>5.55625mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="IsPlannedFilled2">
+                          <rd:DefaultName>IsPlannedFilled</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=IIF(
+    IsNothing(Fields!IsPlannedFilled.Value),
+    IIF(Fields!ColumnValue.Value = "On Hold", "On Hold", "No"),
+    Fields!IsPlannedFilled.Value
+)</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <Color>=IIF(Fields!IsPlannedFilled.Value="Yes","Green",
+IIF(Fields!IsPlannedFilled.Value="No","Red","Black"))</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <VerticalAlign>Top</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="IsActualFilled2">
+                          <rd:DefaultName>IsActualFilled</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=IIF(
+    IsNothing(Fields!IsActualFilled.Value),
+    IIF(Fields!ColumnValue.Value = "On Hold", "On Hold", "No"),
+    Fields!IsActualFilled.Value
+)</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <Color>=IIF(Fields!IsActualFilled.Value="Yes","Green",
+IIF(Fields!IsActualFilled.Value="No","Red","Black"))</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Left</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>5.73542mm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox7">
+                        <rd:DefaultName>Textbox6</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Month</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="WeekEndDate2">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!MonthName.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!MonthName.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>5.47083mm</Size>
+                            <CellContents>
+                              <Textbox Name="WeekDate2">
+                                <rd:DefaultName>WeekDate</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!MonthName.Value</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>=iif(Code.GetColCounter() MOD 2=0,"#f2d6dc","#f5e4c3")</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>5.55625mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox30">
+                                    <rd:DefaultName>Textbox29</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Planned</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#ffe0b3</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                            </TablixMember>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>5.55625mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox52">
+                                    <rd:DefaultName>Textbox51</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Actual</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#cce5cc</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="ProjectName2">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!ProjectName.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!ProjectName.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>44.45mm</Size>
+                    <CellContents>
+                      <Textbox Name="ProjectName2">
+                        <rd:DefaultName>ProjectName</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!ProjectName.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#e5ffff</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <RepeatColumnHeaders>true</RepeatColumnHeaders>
+            <RepeatRowHeaders>true</RepeatRowHeaders>
+            <FixedColumnHeaders>true</FixedColumnHeaders>
+            <FixedRowHeaders>true</FixedRowHeaders>
+            <DataSetName>MonthlyPlannerCheck</DataSetName>
+            <Top>41.10416mm</Top>
+            <Left>0mm</Left>
+            <Height>22.31875mm</Height>
+            <Width>76.2mm</Width>
+            <ZIndex>2</ZIndex>
+            <Visibility>
+              <Hidden>=IIF(Parameters!SelectView.Value="month",false,true)</Hidden>
+            </Visibility>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+          <Textbox Name="Textbox1">
+            <rd:DefaultName>Textbox1</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>This report reviews active projects to check whether weekly and monthly plans are added. It displays </Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <FontWeight>Normal</FontWeight>
+                      <TextDecoration>None</TextDecoration>
+                      <Color>#000000</Color>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value>“Yes”</Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                      <TextDecoration>None</TextDecoration>
+                      <Color>#000000</Color>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value> when a plan is added and </Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <FontWeight>Normal</FontWeight>
+                      <TextDecoration>None</TextDecoration>
+                      <Color>#000000</Color>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value>“No”</Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                      <TextDecoration>None</TextDecoration>
+                      <Color>#000000</Color>
+                    </Style>
+                  </TextRun>
+                  <TextRun>
+                    <Value> when a plan is not added.</Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>12pt</FontSize>
+                      <FontWeight>Normal</FontWeight>
+                      <TextDecoration>None</TextDecoration>
+                      <Color>#000000</Color>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>0.66146cm</Top>
+            <Height>1.11125cm</Height>
+            <Width>15.74271cm</Width>
+            <ZIndex>3</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+        </ReportItems>
+        <Height>87.73584mm</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>203.88791mm</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="Year">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>2025</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Year</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>YearDropDownDS</DataSetName>
+          <ValueField>Year</ValueField>
+          <LabelField>Year</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Month">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=MONTH(TODAY())</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Month</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>MonthDropDownDS</DataSetName>
+          <ValueField>MonthNumber</ValueField>
+          <LabelField>MonthName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Week">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>WeekEndDateDropDownDS</DataSetName>
+          <ValueField>WeekEndDateValue</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Week End Date</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>WeekEndDateDropDownDS</DataSetName>
+          <ValueField>WeekEndDateValue</ValueField>
+          <LabelField>WeekEndDateLabel</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectActiveStatus">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Project Active Status</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectActiveStatusDropDownDS</DataSetName>
+          <ValueField>StatusId</ValueField>
+          <LabelField>Status</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="CustomerName">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CustomerDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Customer Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CustomerDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+          <LabelField>CustomerName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Projects">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Projects</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+          <LabelField>Project</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectStatus">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectStatusDropDownDS</DataSetName>
+          <ValueField>projectstatusid</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Project Status</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectStatusDropDownDS</DataSetName>
+          <ValueField>projectstatusid</ValueField>
+          <LabelField>projectstatus</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectType">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectTypeDropDownDS</DataSetName>
+          <ValueField>projecttypeid</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Project Type</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectTypeDropDownDS</DataSetName>
+          <ValueField>projecttypeid</ValueField>
+          <LabelField>projecttype</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectPriority">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectPriorityDropDownDS</DataSetName>
+          <ValueField>projectpriorityid</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Project Priority</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectPriorityDropDownDS</DataSetName>
+          <ValueField>projectpriorityid</ValueField>
+          <LabelField>projectpriority</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectCategory">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectCategoryDropDownDS</DataSetName>
+          <ValueField>ProjectCategoryId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Project Category</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectCategoryDropDownDS</DataSetName>
+          <ValueField>ProjectCategoryId</ValueField>
+          <LabelField>projectcategory</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectSubcategory">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectSubCategoryDropDownDS</DataSetName>
+          <ValueField>SubCategoryId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Project Subcategory</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectSubCategoryDropDownDS</DataSetName>
+          <ValueField>SubCategoryId</ValueField>
+          <LabelField>Subcategory</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="SelectView">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>week</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Select View</Prompt>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue>
+            <Value>month</Value>
+            <Label>Monthly Planner</Label>
+          </ParameterValue>
+          <ParameterValue>
+            <Value>week</Value>
+            <Label>Weekly Planner</Label>
+          </ParameterValue>
+        </ParameterValues>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>3</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Year</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Month</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Week</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ProjectActiveStatus</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>CustomerName</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>Projects</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>ProjectStatus</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>ProjectType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>ProjectPriority</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>ProjectCategory</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>ProjectSubcategory</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>2</RowIndex>
+          <ParameterName>SelectView</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <Code>Dim colCounter As Integer = 0
+
+Function ResetColCounter()
+    colCounter = 0
+    Return ""
+End Function
+
+Function GetColCounter() As Integer
+    colCounter = colCounter + 1
+    Return colCounter
+End Function
+
+</Code>
+</Report>

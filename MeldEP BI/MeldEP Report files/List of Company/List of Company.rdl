@@ -1,0 +1,1829 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Mm</rd:ReportUnitType>
+  <rd:ReportID>6de2f230-efea-4d0a-9198-856f0380476e</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T16:45:34.9458554Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="MELDEPLiveV32">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=MeldEp_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source MELDEP3V2:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>72a53c58-af8c-4d6d-84b0-9934db3a677d</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="ListOfCompanyDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Company">
+            <Value>=Parameters!Company.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@PrimaryEmployee">
+            <Value>=Parameters!PrimaryEmployee.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@BusinessType">
+            <Value>=Parameters!BusinessType.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CompanyStatus">
+            <Value>=Parameters!CompanyStatus.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT 
+	C.Id AS CompanyId,
+	C.[Name] AS CompanyName,
+	C.Website AS Website,
+	ISNULL(NULLIF(C.EmailAddress,''),'NA') AS CompanyEmail,
+	C.EmployeeId AS PrimaryEmployeeId,
+	P.FirstName+' '+P.LastName AS PrimaryEmployeeName,
+                P.PrimaryEmailAddress AS PrimaryEmail,
+                P.PrimaryPhoneNumber AS PrimaryPhone,
+	C.PhoneNumber AS Phone,
+	ISNULL(NULLIF(C.AlternativeEmailAddress,''),'NA') AS AlternateEmail,
+	C.AlternativePhoneNumber AS AlternatePhone,
+	Con.[Name] AS Country,
+	SP.[Name] AS State,
+	adr.City AS City,
+	adr.ZipCode AS ZipCode,
+	adr.AddressLine1 AS Address1,
+	adr.AddressLine2 AS Address2,
+	C.BusinessTypeId AS BTypeId,
+	BDD.DropDownValue AS BusinessType,
+	C.StatusId AS StatusId,
+	DD.DropDownValue AS CompanyStatus
+
+FROM Company C
+LEFT JOIN Employee E ON E.Id=C.EmployeeId
+LEFT JOIN Person P ON P.Id=E.PersonId
+LEFT JOIN DropDown BDD ON BDD.Id=C.BusinessTypeId
+LEFT JOIN Address adr ON adr.Id=C.AddressId
+LEFT JOIN StateProvince SP ON SP.Id=adr.StateProvinceId
+LEFT JOIN Country Con ON Con.Id=SP.CountryId
+LEFT JOIN DropDown DD ON DD.Id=C.StatusId
+WHERE
+	C.Deleted!=1 AND
+                C.Id IN (@Company) AND
+                ISNULL(C.EmployeeId,'NULL') IN (@PrimaryEmployee) AND
+                ISNULL(C.BusinessTypeId,'NULL') IN (@BusinessType) AND
+                ISNULL(C.StatusId,'NULL') IN (@CompanyStatus)
+
+ORDER BY CompanyName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CompanyId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyId</DataField>
+        </Field>
+        <Field Name="CompanyName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyName</DataField>
+        </Field>
+        <Field Name="Website">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Website</DataField>
+        </Field>
+        <Field Name="CompanyEmail">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyEmail</DataField>
+        </Field>
+        <Field Name="PrimaryEmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryEmployeeId</DataField>
+        </Field>
+        <Field Name="PrimaryEmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryEmployeeName</DataField>
+        </Field>
+        <Field Name="PrimaryEmail">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryEmail</DataField>
+        </Field>
+        <Field Name="Phone">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Phone</DataField>
+        </Field>
+        <Field Name="PrimaryPhone">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryPhone</DataField>
+        </Field>
+        <Field Name="AlternateEmail">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>AlternateEmail</DataField>
+        </Field>
+        <Field Name="AlternatePhone">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>AlternatePhone</DataField>
+        </Field>
+        <Field Name="Country">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Country</DataField>
+        </Field>
+        <Field Name="State">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>State</DataField>
+        </Field>
+        <Field Name="City">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>City</DataField>
+        </Field>
+        <Field Name="ZipCode">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ZipCode</DataField>
+        </Field>
+        <Field Name="Address1">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Address1</DataField>
+        </Field>
+        <Field Name="Address2">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Address2</DataField>
+        </Field>
+        <Field Name="BTypeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>BTypeId</DataField>
+        </Field>
+        <Field Name="BusinessType">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>BusinessType</DataField>
+        </Field>
+        <Field Name="StatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="CompanyStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyStatus</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CompanyDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <CommandText>SELECT 
+	C.Id AS CompanyId,
+	C.[Name] AS CompanyName
+FROM Company C
+WHERE 
+	C.Deleted!=1
+ORDER BY CompanyName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CompanyId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyId</DataField>
+        </Field>
+        <Field Name="CompanyName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="PrimaryEmployeeDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT DISTINCT
+	ISNULL(C.EmployeeId,'NULL') AS PrimaryEmployeeId,
+	ISNULL((P.FirstName+' '+P.LastName),'NA') AS PrimaryEmployeeName
+FROM Company C
+LEFT JOIN Employee E ON E.Id=C.EmployeeId
+LEFT JOIN Person P ON P.Id=E.PersonId
+WHERE
+	C.Deleted!=1
+ORDER BY PrimaryEmployeeName;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="PrimaryEmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryEmployeeId</DataField>
+        </Field>
+        <Field Name="PrimaryEmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PrimaryEmployeeName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="BusinessTypeDropDown">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT DISTINCT
+	ISNULL(C.BusinessTypeId,'NULL') AS BusinessTypeId,
+	ISNULL(DD.DropDownValue,'NA') AS BusinessType
+FROM Company C
+LEFT JOIN DropDown DD ON DD.Id=C.BusinessTypeId
+WHERE 
+	C.Deleted!=1</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="BusinessTypeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>BusinessTypeId</DataField>
+        </Field>
+        <Field Name="BusinessType">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>BusinessType</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CompanyStatusDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT DISTINCT
+	ISNULL(C.StatusId,'NULL') AS StatusId,
+	ISNULL(DD.DropDownValue,'NA') AS CompanyStatus
+FROM Company C
+LEFT JOIN DropDown DD ON DD.Id=C.StatusId
+WHERE 
+	C.Deleted!=1 
+ORDER BY CompanyStatus</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="CompanyStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CompanyStatus</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="ReportTitle">
+            <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+            <rd:DefaultName>ReportTitle</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>List of Company</Value>
+                    <Style>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>16pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>0.35278mm</Top>
+            <Left>0.46567cm</Left>
+            <Height>8.255mm</Height>
+            <Width>139.7mm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Tablix Name="Tablix1">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>17.16837mm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>11.37708mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox25">
+                          <rd:DefaultName>Textbox25</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Zip Code</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>11.37708mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="ZipCode1">
+                          <rd:DefaultName>ZipCode1</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=IIF(ISNOTHING(Fields!ZipCode.Value),"NA",Fields!ZipCode.Value)</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>49.67111mm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox23">
+                        <rd:DefaultName>Textbox23</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Company Name</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>80.48061mm</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox27">
+                            <rd:DefaultName>Textbox27</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>Website</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                      <FontWeight>Bold</FontWeight>
+                                      <Color>White</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#1b75ab</BackgroundColor>
+                              <VerticalAlign>Middle</VerticalAlign>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>50.18834mm</Size>
+                            <CellContents>
+                              <Textbox Name="Textbox32">
+                                <rd:DefaultName>Textbox32</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>Company Email</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                          <Color>White</Color>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>#1b75ab</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>28.92778mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox60">
+                                    <rd:DefaultName>Textbox60</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Phone</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                              <Color>White</Color>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#1b75ab</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember>
+                                  <TablixHeader>
+                                    <Size>39.81669mm</Size>
+                                    <CellContents>
+                                      <Textbox Name="Textbox62">
+                                        <rd:DefaultName>Textbox62</rd:DefaultName>
+                                        <CanGrow>true</CanGrow>
+                                        <KeepTogether>true</KeepTogether>
+                                        <Paragraphs>
+                                          <Paragraph>
+                                            <TextRuns>
+                                              <TextRun>
+                                                <Value>Business Type</Value>
+                                                <Style>
+                                                  <FontFamily>Arial</FontFamily>
+                                                  <FontWeight>Bold</FontWeight>
+                                                  <Color>White</Color>
+                                                </Style>
+                                              </TextRun>
+                                            </TextRuns>
+                                            <Style>
+                                              <TextAlign>Center</TextAlign>
+                                            </Style>
+                                          </Paragraph>
+                                        </Paragraphs>
+                                        <Style>
+                                          <Border>
+                                            <Color>LightGrey</Color>
+                                            <Style>Solid</Style>
+                                          </Border>
+                                          <BackgroundColor>#1b75ab</BackgroundColor>
+                                          <VerticalAlign>Middle</VerticalAlign>
+                                          <PaddingLeft>2pt</PaddingLeft>
+                                          <PaddingRight>2pt</PaddingRight>
+                                          <PaddingTop>2pt</PaddingTop>
+                                          <PaddingBottom>2pt</PaddingBottom>
+                                        </Style>
+                                      </Textbox>
+                                    </CellContents>
+                                  </TablixHeader>
+                                  <TablixMembers>
+                                    <TablixMember>
+                                      <TablixHeader>
+                                        <Size>30.50332mm</Size>
+                                        <CellContents>
+                                          <Textbox Name="Textbox64">
+                                            <rd:DefaultName>Textbox64</rd:DefaultName>
+                                            <CanGrow>true</CanGrow>
+                                            <KeepTogether>true</KeepTogether>
+                                            <Paragraphs>
+                                              <Paragraph>
+                                                <TextRuns>
+                                                  <TextRun>
+                                                    <Value>Company Status</Value>
+                                                    <Style>
+                                                      <FontFamily>Arial</FontFamily>
+                                                      <FontWeight>Bold</FontWeight>
+                                                      <Color>White</Color>
+                                                    </Style>
+                                                  </TextRun>
+                                                </TextRuns>
+                                                <Style>
+                                                  <TextAlign>Center</TextAlign>
+                                                </Style>
+                                              </Paragraph>
+                                            </Paragraphs>
+                                            <Style>
+                                              <Border>
+                                                <Color>LightGrey</Color>
+                                                <Style>Solid</Style>
+                                              </Border>
+                                              <BackgroundColor>#1b75ab</BackgroundColor>
+                                              <VerticalAlign>Middle</VerticalAlign>
+                                              <PaddingLeft>2pt</PaddingLeft>
+                                              <PaddingRight>2pt</PaddingRight>
+                                              <PaddingTop>2pt</PaddingTop>
+                                              <PaddingBottom>2pt</PaddingBottom>
+                                            </Style>
+                                          </Textbox>
+                                        </CellContents>
+                                      </TablixHeader>
+                                      <TablixMembers>
+                                        <TablixMember>
+                                          <TablixHeader>
+                                            <Size>32.50277mm</Size>
+                                            <CellContents>
+                                              <Textbox Name="Textbox66">
+                                                <rd:DefaultName>Textbox66</rd:DefaultName>
+                                                <CanGrow>true</CanGrow>
+                                                <KeepTogether>true</KeepTogether>
+                                                <Paragraphs>
+                                                  <Paragraph>
+                                                    <TextRuns>
+                                                      <TextRun>
+                                                        <Value>Primary Email</Value>
+                                                        <Style>
+                                                          <FontFamily>Arial</FontFamily>
+                                                          <FontWeight>Bold</FontWeight>
+                                                          <Color>White</Color>
+                                                        </Style>
+                                                      </TextRun>
+                                                    </TextRuns>
+                                                    <Style>
+                                                      <TextAlign>Center</TextAlign>
+                                                    </Style>
+                                                  </Paragraph>
+                                                </Paragraphs>
+                                                <Style>
+                                                  <Border>
+                                                    <Color>LightGrey</Color>
+                                                    <Style>Solid</Style>
+                                                  </Border>
+                                                  <BackgroundColor>#1b75ab</BackgroundColor>
+                                                  <VerticalAlign>Middle</VerticalAlign>
+                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                  <PaddingRight>2pt</PaddingRight>
+                                                  <PaddingTop>2pt</PaddingTop>
+                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                </Style>
+                                              </Textbox>
+                                            </CellContents>
+                                          </TablixHeader>
+                                          <TablixMembers>
+                                            <TablixMember>
+                                              <TablixHeader>
+                                                <Size>29.23333mm</Size>
+                                                <CellContents>
+                                                  <Textbox Name="Textbox68">
+                                                    <rd:DefaultName>Textbox68</rd:DefaultName>
+                                                    <CanGrow>true</CanGrow>
+                                                    <KeepTogether>true</KeepTogether>
+                                                    <Paragraphs>
+                                                      <Paragraph>
+                                                        <TextRuns>
+                                                          <TextRun>
+                                                            <Value>Primary Phone</Value>
+                                                            <Style>
+                                                              <FontFamily>Arial</FontFamily>
+                                                              <FontWeight>Bold</FontWeight>
+                                                              <Color>White</Color>
+                                                            </Style>
+                                                          </TextRun>
+                                                        </TextRuns>
+                                                        <Style>
+                                                          <TextAlign>Center</TextAlign>
+                                                        </Style>
+                                                      </Paragraph>
+                                                    </Paragraphs>
+                                                    <Style>
+                                                      <Border>
+                                                        <Color>LightGrey</Color>
+                                                        <Style>Solid</Style>
+                                                      </Border>
+                                                      <BackgroundColor>#1b75ab</BackgroundColor>
+                                                      <VerticalAlign>Middle</VerticalAlign>
+                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                      <PaddingRight>2pt</PaddingRight>
+                                                      <PaddingTop>2pt</PaddingTop>
+                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                    </Style>
+                                                  </Textbox>
+                                                </CellContents>
+                                              </TablixHeader>
+                                              <TablixMembers>
+                                                <TablixMember>
+                                                  <TablixHeader>
+                                                    <Size>28.38666mm</Size>
+                                                    <CellContents>
+                                                      <Textbox Name="Textbox70">
+                                                        <rd:DefaultName>Textbox70</rd:DefaultName>
+                                                        <CanGrow>true</CanGrow>
+                                                        <KeepTogether>true</KeepTogether>
+                                                        <Paragraphs>
+                                                          <Paragraph>
+                                                            <TextRuns>
+                                                              <TextRun>
+                                                                <Value>Alternate Email</Value>
+                                                                <Style>
+                                                                  <FontFamily>Arial</FontFamily>
+                                                                  <FontWeight>Bold</FontWeight>
+                                                                  <Color>White</Color>
+                                                                </Style>
+                                                              </TextRun>
+                                                            </TextRuns>
+                                                            <Style>
+                                                              <TextAlign>Center</TextAlign>
+                                                            </Style>
+                                                          </Paragraph>
+                                                        </Paragraphs>
+                                                        <Style>
+                                                          <Border>
+                                                            <Color>LightGrey</Color>
+                                                            <Style>Solid</Style>
+                                                          </Border>
+                                                          <BackgroundColor>#1b75ab</BackgroundColor>
+                                                          <VerticalAlign>Middle</VerticalAlign>
+                                                          <PaddingLeft>2pt</PaddingLeft>
+                                                          <PaddingRight>2pt</PaddingRight>
+                                                          <PaddingTop>2pt</PaddingTop>
+                                                          <PaddingBottom>2pt</PaddingBottom>
+                                                        </Style>
+                                                      </Textbox>
+                                                    </CellContents>
+                                                  </TablixHeader>
+                                                  <TablixMembers>
+                                                    <TablixMember>
+                                                      <TablixHeader>
+                                                        <Size>24.36498mm</Size>
+                                                        <CellContents>
+                                                          <Textbox Name="Textbox72">
+                                                            <rd:DefaultName>Textbox72</rd:DefaultName>
+                                                            <CanGrow>true</CanGrow>
+                                                            <KeepTogether>true</KeepTogether>
+                                                            <Paragraphs>
+                                                              <Paragraph>
+                                                                <TextRuns>
+                                                                  <TextRun>
+                                                                    <Value>Address1</Value>
+                                                                    <Style>
+                                                                      <FontFamily>Arial</FontFamily>
+                                                                      <FontWeight>Bold</FontWeight>
+                                                                      <Color>White</Color>
+                                                                    </Style>
+                                                                  </TextRun>
+                                                                </TextRuns>
+                                                                <Style>
+                                                                  <TextAlign>Center</TextAlign>
+                                                                </Style>
+                                                              </Paragraph>
+                                                            </Paragraphs>
+                                                            <Style>
+                                                              <Border>
+                                                                <Color>LightGrey</Color>
+                                                                <Style>Solid</Style>
+                                                              </Border>
+                                                              <BackgroundColor>#1b75ab</BackgroundColor>
+                                                              <VerticalAlign>Middle</VerticalAlign>
+                                                              <PaddingLeft>2pt</PaddingLeft>
+                                                              <PaddingRight>2pt</PaddingRight>
+                                                              <PaddingTop>2pt</PaddingTop>
+                                                              <PaddingBottom>2pt</PaddingBottom>
+                                                            </Style>
+                                                          </Textbox>
+                                                        </CellContents>
+                                                      </TablixHeader>
+                                                      <TablixMembers>
+                                                        <TablixMember>
+                                                          <TablixHeader>
+                                                            <Size>25mm</Size>
+                                                            <CellContents>
+                                                              <Textbox Name="Textbox74">
+                                                                <rd:DefaultName>Textbox74</rd:DefaultName>
+                                                                <CanGrow>true</CanGrow>
+                                                                <KeepTogether>true</KeepTogether>
+                                                                <Paragraphs>
+                                                                  <Paragraph>
+                                                                    <TextRuns>
+                                                                      <TextRun>
+                                                                        <Value>Address2</Value>
+                                                                        <Style>
+                                                                          <FontFamily>Arial</FontFamily>
+                                                                          <FontWeight>Bold</FontWeight>
+                                                                          <Color>White</Color>
+                                                                        </Style>
+                                                                      </TextRun>
+                                                                    </TextRuns>
+                                                                    <Style>
+                                                                      <TextAlign>Center</TextAlign>
+                                                                    </Style>
+                                                                  </Paragraph>
+                                                                </Paragraphs>
+                                                                <Style>
+                                                                  <Border>
+                                                                    <Color>LightGrey</Color>
+                                                                    <Style>Solid</Style>
+                                                                  </Border>
+                                                                  <BackgroundColor>#1b75ab</BackgroundColor>
+                                                                  <VerticalAlign>Middle</VerticalAlign>
+                                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                                  <PaddingRight>2pt</PaddingRight>
+                                                                  <PaddingTop>2pt</PaddingTop>
+                                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                                </Style>
+                                                              </Textbox>
+                                                            </CellContents>
+                                                          </TablixHeader>
+                                                          <TablixMembers>
+                                                            <TablixMember>
+                                                              <TablixHeader>
+                                                                <Size>29.23333mm</Size>
+                                                                <CellContents>
+                                                                  <Textbox Name="Textbox76">
+                                                                    <rd:DefaultName>Textbox76</rd:DefaultName>
+                                                                    <CanGrow>true</CanGrow>
+                                                                    <KeepTogether>true</KeepTogether>
+                                                                    <Paragraphs>
+                                                                      <Paragraph>
+                                                                        <TextRuns>
+                                                                          <TextRun>
+                                                                            <Value>City</Value>
+                                                                            <Style>
+                                                                              <FontFamily>Arial</FontFamily>
+                                                                              <FontWeight>Bold</FontWeight>
+                                                                              <Color>White</Color>
+                                                                            </Style>
+                                                                          </TextRun>
+                                                                        </TextRuns>
+                                                                        <Style>
+                                                                          <TextAlign>Center</TextAlign>
+                                                                        </Style>
+                                                                      </Paragraph>
+                                                                    </Paragraphs>
+                                                                    <Style>
+                                                                      <Border>
+                                                                        <Color>LightGrey</Color>
+                                                                        <Style>Solid</Style>
+                                                                      </Border>
+                                                                      <BackgroundColor>#1b75ab</BackgroundColor>
+                                                                      <VerticalAlign>Middle</VerticalAlign>
+                                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                                      <PaddingRight>2pt</PaddingRight>
+                                                                      <PaddingTop>2pt</PaddingTop>
+                                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                                    </Style>
+                                                                  </Textbox>
+                                                                </CellContents>
+                                                              </TablixHeader>
+                                                              <TablixMembers>
+                                                                <TablixMember>
+                                                                  <TablixHeader>
+                                                                    <Size>27.54mm</Size>
+                                                                    <CellContents>
+                                                                      <Textbox Name="Textbox78">
+                                                                        <rd:DefaultName>Textbox78</rd:DefaultName>
+                                                                        <CanGrow>true</CanGrow>
+                                                                        <KeepTogether>true</KeepTogether>
+                                                                        <Paragraphs>
+                                                                          <Paragraph>
+                                                                            <TextRuns>
+                                                                              <TextRun>
+                                                                                <Value>State</Value>
+                                                                                <Style>
+                                                                                  <FontFamily>Arial</FontFamily>
+                                                                                  <FontWeight>Bold</FontWeight>
+                                                                                  <Color>White</Color>
+                                                                                </Style>
+                                                                              </TextRun>
+                                                                            </TextRuns>
+                                                                            <Style>
+                                                                              <TextAlign>Center</TextAlign>
+                                                                            </Style>
+                                                                          </Paragraph>
+                                                                        </Paragraphs>
+                                                                        <Style>
+                                                                          <Border>
+                                                                            <Color>LightGrey</Color>
+                                                                            <Style>Solid</Style>
+                                                                          </Border>
+                                                                          <BackgroundColor>#1b75ab</BackgroundColor>
+                                                                          <VerticalAlign>Middle</VerticalAlign>
+                                                                          <PaddingLeft>2pt</PaddingLeft>
+                                                                          <PaddingRight>2pt</PaddingRight>
+                                                                          <PaddingTop>2pt</PaddingTop>
+                                                                          <PaddingBottom>2pt</PaddingBottom>
+                                                                        </Style>
+                                                                      </Textbox>
+                                                                    </CellContents>
+                                                                  </TablixHeader>
+                                                                  <TablixMembers>
+                                                                    <TablixMember>
+                                                                      <TablixHeader>
+                                                                        <Size>41.72165mm</Size>
+                                                                        <CellContents>
+                                                                          <Textbox Name="Textbox80">
+                                                                            <rd:DefaultName>Textbox80</rd:DefaultName>
+                                                                            <CanGrow>true</CanGrow>
+                                                                            <KeepTogether>true</KeepTogether>
+                                                                            <Paragraphs>
+                                                                              <Paragraph>
+                                                                                <TextRuns>
+                                                                                  <TextRun>
+                                                                                    <Value>Country</Value>
+                                                                                    <Style>
+                                                                                      <FontFamily>Arial</FontFamily>
+                                                                                      <FontWeight>Bold</FontWeight>
+                                                                                      <Color>White</Color>
+                                                                                    </Style>
+                                                                                  </TextRun>
+                                                                                </TextRuns>
+                                                                                <Style>
+                                                                                  <TextAlign>Center</TextAlign>
+                                                                                </Style>
+                                                                              </Paragraph>
+                                                                            </Paragraphs>
+                                                                            <Style>
+                                                                              <Border>
+                                                                                <Color>LightGrey</Color>
+                                                                                <Style>Solid</Style>
+                                                                              </Border>
+                                                                              <BackgroundColor>#1b75ab</BackgroundColor>
+                                                                              <VerticalAlign>Middle</VerticalAlign>
+                                                                              <PaddingLeft>2pt</PaddingLeft>
+                                                                              <PaddingRight>2pt</PaddingRight>
+                                                                              <PaddingTop>2pt</PaddingTop>
+                                                                              <PaddingBottom>2pt</PaddingBottom>
+                                                                            </Style>
+                                                                          </Textbox>
+                                                                        </CellContents>
+                                                                      </TablixHeader>
+                                                                      <TablixMembers>
+                                                                        <TablixMember />
+                                                                      </TablixMembers>
+                                                                    </TablixMember>
+                                                                  </TablixMembers>
+                                                                </TablixMember>
+                                                              </TablixMembers>
+                                                            </TablixMember>
+                                                          </TablixMembers>
+                                                        </TablixMember>
+                                                      </TablixMembers>
+                                                    </TablixMember>
+                                                  </TablixMembers>
+                                                </TablixMember>
+                                              </TablixMembers>
+                                            </TablixMember>
+                                          </TablixMembers>
+                                        </TablixMember>
+                                      </TablixMembers>
+                                    </TablixMember>
+                                  </TablixMembers>
+                                </TablixMember>
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                  <FixedData>true</FixedData>
+                  <KeepWithGroup>After</KeepWithGroup>
+                  <RepeatOnNewPage>true</RepeatOnNewPage>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="CompanyName">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!CompanyName.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!CompanyName.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>49.67111mm</Size>
+                    <CellContents>
+                      <Textbox Name="CompanyName2">
+                        <rd:DefaultName>CompanyName2</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!CompanyName.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="Website">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!Website.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!Website.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>80.48061mm</Size>
+                        <CellContents>
+                          <Textbox Name="Website1">
+                            <rd:DefaultName>Website1</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=IIF(ISNOTHING(Fields!Website.Value),"NA",Fields!Website.Value)</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                      <TextDecoration>Underline</TextDecoration>
+                                      <Color>=IIF(ISNOTHING(Fields!Website.Value),"No Color","Blue")</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <ActionInfo>
+                              <Actions>
+                                <Action>
+                                  <Hyperlink>=Fields!Website.Value</Hyperlink>
+                                </Action>
+                              </Actions>
+                            </ActionInfo>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Group Name="CompanyEmail">
+                            <GroupExpressions>
+                              <GroupExpression>=Fields!CompanyEmail.Value</GroupExpression>
+                            </GroupExpressions>
+                          </Group>
+                          <SortExpressions>
+                            <SortExpression>
+                              <Value>=Fields!CompanyEmail.Value</Value>
+                            </SortExpression>
+                          </SortExpressions>
+                          <TablixHeader>
+                            <Size>50.18834mm</Size>
+                            <CellContents>
+                              <Textbox Name="CompanyEmail1">
+                                <rd:DefaultName>CompanyEmail1</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!CompanyEmail.Value</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style />
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <Group Name="Phone">
+                                <GroupExpressions>
+                                  <GroupExpression>=Fields!Phone.Value</GroupExpression>
+                                </GroupExpressions>
+                              </Group>
+                              <SortExpressions>
+                                <SortExpression>
+                                  <Value>=Fields!Phone.Value</Value>
+                                </SortExpression>
+                              </SortExpressions>
+                              <TablixHeader>
+                                <Size>28.92778mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Phone1">
+                                    <rd:DefaultName>Phone1</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>=IIF(ISNOTHING(Fields!Phone.Value),"NA",Fields!Phone.Value)</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style />
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember>
+                                  <Group Name="BusinessType">
+                                    <GroupExpressions>
+                                      <GroupExpression>=Fields!BusinessType.Value</GroupExpression>
+                                    </GroupExpressions>
+                                  </Group>
+                                  <SortExpressions>
+                                    <SortExpression>
+                                      <Value>=Fields!BusinessType.Value</Value>
+                                    </SortExpression>
+                                  </SortExpressions>
+                                  <TablixHeader>
+                                    <Size>39.81669mm</Size>
+                                    <CellContents>
+                                      <Textbox Name="BusinessType1">
+                                        <rd:DefaultName>BusinessType1</rd:DefaultName>
+                                        <CanGrow>true</CanGrow>
+                                        <KeepTogether>true</KeepTogether>
+                                        <Paragraphs>
+                                          <Paragraph>
+                                            <TextRuns>
+                                              <TextRun>
+                                                <Value>=IIF(ISNOTHING(Fields!BusinessType.Value),"NA",Fields!BusinessType.Value)</Value>
+                                                <Style>
+                                                  <FontFamily>Arial</FontFamily>
+                                                </Style>
+                                              </TextRun>
+                                            </TextRuns>
+                                            <Style />
+                                          </Paragraph>
+                                        </Paragraphs>
+                                        <Style>
+                                          <Border>
+                                            <Color>LightGrey</Color>
+                                            <Style>Solid</Style>
+                                          </Border>
+                                          <PaddingLeft>2pt</PaddingLeft>
+                                          <PaddingRight>2pt</PaddingRight>
+                                          <PaddingTop>2pt</PaddingTop>
+                                          <PaddingBottom>2pt</PaddingBottom>
+                                        </Style>
+                                      </Textbox>
+                                    </CellContents>
+                                  </TablixHeader>
+                                  <TablixMembers>
+                                    <TablixMember>
+                                      <Group Name="CompanyStatus">
+                                        <GroupExpressions>
+                                          <GroupExpression>=Fields!CompanyStatus.Value</GroupExpression>
+                                        </GroupExpressions>
+                                      </Group>
+                                      <SortExpressions>
+                                        <SortExpression>
+                                          <Value>=Fields!CompanyStatus.Value</Value>
+                                        </SortExpression>
+                                      </SortExpressions>
+                                      <TablixHeader>
+                                        <Size>30.50332mm</Size>
+                                        <CellContents>
+                                          <Textbox Name="CompanyStatus1">
+                                            <rd:DefaultName>CompanyStatus1</rd:DefaultName>
+                                            <CanGrow>true</CanGrow>
+                                            <KeepTogether>true</KeepTogether>
+                                            <Paragraphs>
+                                              <Paragraph>
+                                                <TextRuns>
+                                                  <TextRun>
+                                                    <Value>=IIF(ISNOTHING(Fields!CompanyStatus.Value),"NA",Fields!CompanyStatus.Value)</Value>
+                                                    <Style>
+                                                      <FontFamily>Arial</FontFamily>
+                                                    </Style>
+                                                  </TextRun>
+                                                </TextRuns>
+                                                <Style />
+                                              </Paragraph>
+                                            </Paragraphs>
+                                            <Style>
+                                              <Border>
+                                                <Color>LightGrey</Color>
+                                                <Style>Solid</Style>
+                                              </Border>
+                                              <PaddingLeft>2pt</PaddingLeft>
+                                              <PaddingRight>2pt</PaddingRight>
+                                              <PaddingTop>2pt</PaddingTop>
+                                              <PaddingBottom>2pt</PaddingBottom>
+                                            </Style>
+                                          </Textbox>
+                                        </CellContents>
+                                      </TablixHeader>
+                                      <TablixMembers>
+                                        <TablixMember>
+                                          <Group Name="PrimaryEmail">
+                                            <GroupExpressions>
+                                              <GroupExpression>=Fields!PrimaryEmail.Value</GroupExpression>
+                                            </GroupExpressions>
+                                          </Group>
+                                          <SortExpressions>
+                                            <SortExpression>
+                                              <Value>=Fields!PrimaryEmail.Value</Value>
+                                            </SortExpression>
+                                          </SortExpressions>
+                                          <TablixHeader>
+                                            <Size>32.50277mm</Size>
+                                            <CellContents>
+                                              <Textbox Name="PrimaryEmail1">
+                                                <rd:DefaultName>PrimaryEmail1</rd:DefaultName>
+                                                <CanGrow>true</CanGrow>
+                                                <KeepTogether>true</KeepTogether>
+                                                <Paragraphs>
+                                                  <Paragraph>
+                                                    <TextRuns>
+                                                      <TextRun>
+                                                        <Value>=IIF(ISNOTHING(Fields!PrimaryEmail.Value),"NA",Fields!PrimaryEmail.Value)</Value>
+                                                        <Style>
+                                                          <FontFamily>Arial</FontFamily>
+                                                        </Style>
+                                                      </TextRun>
+                                                    </TextRuns>
+                                                    <Style />
+                                                  </Paragraph>
+                                                </Paragraphs>
+                                                <Style>
+                                                  <Border>
+                                                    <Color>LightGrey</Color>
+                                                    <Style>Solid</Style>
+                                                  </Border>
+                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                  <PaddingRight>2pt</PaddingRight>
+                                                  <PaddingTop>2pt</PaddingTop>
+                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                </Style>
+                                              </Textbox>
+                                            </CellContents>
+                                          </TablixHeader>
+                                          <TablixMembers>
+                                            <TablixMember>
+                                              <Group Name="PrimaryPhone">
+                                                <GroupExpressions>
+                                                  <GroupExpression>=Fields!PrimaryPhone.Value</GroupExpression>
+                                                </GroupExpressions>
+                                              </Group>
+                                              <SortExpressions>
+                                                <SortExpression>
+                                                  <Value>=Fields!PrimaryPhone.Value</Value>
+                                                </SortExpression>
+                                              </SortExpressions>
+                                              <TablixHeader>
+                                                <Size>29.23333mm</Size>
+                                                <CellContents>
+                                                  <Textbox Name="PrimaryPhone1">
+                                                    <rd:DefaultName>PrimaryPhone1</rd:DefaultName>
+                                                    <CanGrow>true</CanGrow>
+                                                    <KeepTogether>true</KeepTogether>
+                                                    <Paragraphs>
+                                                      <Paragraph>
+                                                        <TextRuns>
+                                                          <TextRun>
+                                                            <Value>=IIF(ISNOTHING(Fields!PrimaryPhone.Value),"NA",Fields!PrimaryPhone.Value)</Value>
+                                                            <Style>
+                                                              <FontFamily>Arial</FontFamily>
+                                                            </Style>
+                                                          </TextRun>
+                                                        </TextRuns>
+                                                        <Style />
+                                                      </Paragraph>
+                                                    </Paragraphs>
+                                                    <Style>
+                                                      <Border>
+                                                        <Color>LightGrey</Color>
+                                                        <Style>Solid</Style>
+                                                      </Border>
+                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                      <PaddingRight>2pt</PaddingRight>
+                                                      <PaddingTop>2pt</PaddingTop>
+                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                    </Style>
+                                                  </Textbox>
+                                                </CellContents>
+                                              </TablixHeader>
+                                              <TablixMembers>
+                                                <TablixMember>
+                                                  <Group Name="AlternateEmail">
+                                                    <GroupExpressions>
+                                                      <GroupExpression>=Fields!AlternateEmail.Value</GroupExpression>
+                                                    </GroupExpressions>
+                                                  </Group>
+                                                  <SortExpressions>
+                                                    <SortExpression>
+                                                      <Value>=Fields!AlternateEmail.Value</Value>
+                                                    </SortExpression>
+                                                  </SortExpressions>
+                                                  <TablixHeader>
+                                                    <Size>28.38666mm</Size>
+                                                    <CellContents>
+                                                      <Textbox Name="AlternateEmail">
+                                                        <rd:DefaultName>AlternateEmail</rd:DefaultName>
+                                                        <CanGrow>true</CanGrow>
+                                                        <KeepTogether>true</KeepTogether>
+                                                        <Paragraphs>
+                                                          <Paragraph>
+                                                            <TextRuns>
+                                                              <TextRun>
+                                                                <Value>=Fields!AlternateEmail.Value</Value>
+                                                                <Style>
+                                                                  <FontFamily>Arial</FontFamily>
+                                                                </Style>
+                                                              </TextRun>
+                                                            </TextRuns>
+                                                            <Style />
+                                                          </Paragraph>
+                                                        </Paragraphs>
+                                                        <Style>
+                                                          <Border>
+                                                            <Color>LightGrey</Color>
+                                                            <Style>Solid</Style>
+                                                          </Border>
+                                                          <PaddingLeft>2pt</PaddingLeft>
+                                                          <PaddingRight>2pt</PaddingRight>
+                                                          <PaddingTop>2pt</PaddingTop>
+                                                          <PaddingBottom>2pt</PaddingBottom>
+                                                        </Style>
+                                                      </Textbox>
+                                                    </CellContents>
+                                                  </TablixHeader>
+                                                  <TablixMembers>
+                                                    <TablixMember>
+                                                      <Group Name="Address1">
+                                                        <GroupExpressions>
+                                                          <GroupExpression>=Fields!Address1.Value</GroupExpression>
+                                                        </GroupExpressions>
+                                                      </Group>
+                                                      <SortExpressions>
+                                                        <SortExpression>
+                                                          <Value>=Fields!Address1.Value</Value>
+                                                        </SortExpression>
+                                                      </SortExpressions>
+                                                      <TablixHeader>
+                                                        <Size>24.36498mm</Size>
+                                                        <CellContents>
+                                                          <Textbox Name="Address11">
+                                                            <rd:DefaultName>Address11</rd:DefaultName>
+                                                            <CanGrow>true</CanGrow>
+                                                            <KeepTogether>true</KeepTogether>
+                                                            <Paragraphs>
+                                                              <Paragraph>
+                                                                <TextRuns>
+                                                                  <TextRun>
+                                                                    <Value>=IIF(ISNOTHING(Fields!Address1.Value),"NA",Fields!Address1.Value)</Value>
+                                                                    <Style>
+                                                                      <FontFamily>Arial</FontFamily>
+                                                                    </Style>
+                                                                  </TextRun>
+                                                                </TextRuns>
+                                                                <Style />
+                                                              </Paragraph>
+                                                            </Paragraphs>
+                                                            <Style>
+                                                              <Border>
+                                                                <Color>LightGrey</Color>
+                                                                <Style>Solid</Style>
+                                                              </Border>
+                                                              <PaddingLeft>2pt</PaddingLeft>
+                                                              <PaddingRight>2pt</PaddingRight>
+                                                              <PaddingTop>2pt</PaddingTop>
+                                                              <PaddingBottom>2pt</PaddingBottom>
+                                                            </Style>
+                                                          </Textbox>
+                                                        </CellContents>
+                                                      </TablixHeader>
+                                                      <TablixMembers>
+                                                        <TablixMember>
+                                                          <Group Name="Address2">
+                                                            <GroupExpressions>
+                                                              <GroupExpression>=Fields!Address2.Value</GroupExpression>
+                                                            </GroupExpressions>
+                                                          </Group>
+                                                          <SortExpressions>
+                                                            <SortExpression>
+                                                              <Value>=Fields!Address2.Value</Value>
+                                                            </SortExpression>
+                                                          </SortExpressions>
+                                                          <TablixHeader>
+                                                            <Size>25mm</Size>
+                                                            <CellContents>
+                                                              <Textbox Name="Address21">
+                                                                <rd:DefaultName>Address21</rd:DefaultName>
+                                                                <CanGrow>true</CanGrow>
+                                                                <KeepTogether>true</KeepTogether>
+                                                                <Paragraphs>
+                                                                  <Paragraph>
+                                                                    <TextRuns>
+                                                                      <TextRun>
+                                                                        <Value>=IIF(ISNOTHING(Fields!Address2.Value),"NA",Fields!Address2.Value)</Value>
+                                                                        <Style>
+                                                                          <FontFamily>Arial</FontFamily>
+                                                                        </Style>
+                                                                      </TextRun>
+                                                                    </TextRuns>
+                                                                    <Style />
+                                                                  </Paragraph>
+                                                                </Paragraphs>
+                                                                <Style>
+                                                                  <Border>
+                                                                    <Color>LightGrey</Color>
+                                                                    <Style>Solid</Style>
+                                                                  </Border>
+                                                                  <PaddingLeft>2pt</PaddingLeft>
+                                                                  <PaddingRight>2pt</PaddingRight>
+                                                                  <PaddingTop>2pt</PaddingTop>
+                                                                  <PaddingBottom>2pt</PaddingBottom>
+                                                                </Style>
+                                                              </Textbox>
+                                                            </CellContents>
+                                                          </TablixHeader>
+                                                          <TablixMembers>
+                                                            <TablixMember>
+                                                              <Group Name="City">
+                                                                <GroupExpressions>
+                                                                  <GroupExpression>=Fields!City.Value</GroupExpression>
+                                                                </GroupExpressions>
+                                                              </Group>
+                                                              <SortExpressions>
+                                                                <SortExpression>
+                                                                  <Value>=Fields!City.Value</Value>
+                                                                </SortExpression>
+                                                              </SortExpressions>
+                                                              <TablixHeader>
+                                                                <Size>29.23333mm</Size>
+                                                                <CellContents>
+                                                                  <Textbox Name="City1">
+                                                                    <rd:DefaultName>City1</rd:DefaultName>
+                                                                    <CanGrow>true</CanGrow>
+                                                                    <KeepTogether>true</KeepTogether>
+                                                                    <Paragraphs>
+                                                                      <Paragraph>
+                                                                        <TextRuns>
+                                                                          <TextRun>
+                                                                            <Value>=IIF(ISNOTHING(Fields!City.Value),"NA",Fields!City.Value)</Value>
+                                                                            <Style>
+                                                                              <FontFamily>Arial</FontFamily>
+                                                                            </Style>
+                                                                          </TextRun>
+                                                                        </TextRuns>
+                                                                        <Style />
+                                                                      </Paragraph>
+                                                                    </Paragraphs>
+                                                                    <Style>
+                                                                      <Border>
+                                                                        <Color>LightGrey</Color>
+                                                                        <Style>Solid</Style>
+                                                                      </Border>
+                                                                      <PaddingLeft>2pt</PaddingLeft>
+                                                                      <PaddingRight>2pt</PaddingRight>
+                                                                      <PaddingTop>2pt</PaddingTop>
+                                                                      <PaddingBottom>2pt</PaddingBottom>
+                                                                    </Style>
+                                                                  </Textbox>
+                                                                </CellContents>
+                                                              </TablixHeader>
+                                                              <TablixMembers>
+                                                                <TablixMember>
+                                                                  <Group Name="State">
+                                                                    <GroupExpressions>
+                                                                      <GroupExpression>=Fields!State.Value</GroupExpression>
+                                                                    </GroupExpressions>
+                                                                  </Group>
+                                                                  <SortExpressions>
+                                                                    <SortExpression>
+                                                                      <Value>=Fields!State.Value</Value>
+                                                                    </SortExpression>
+                                                                  </SortExpressions>
+                                                                  <TablixHeader>
+                                                                    <Size>27.54mm</Size>
+                                                                    <CellContents>
+                                                                      <Textbox Name="State1">
+                                                                        <rd:DefaultName>State1</rd:DefaultName>
+                                                                        <CanGrow>true</CanGrow>
+                                                                        <KeepTogether>true</KeepTogether>
+                                                                        <Paragraphs>
+                                                                          <Paragraph>
+                                                                            <TextRuns>
+                                                                              <TextRun>
+                                                                                <Value>=IIF(ISNOTHING(Fields!State.Value),"NA",Fields!State.Value)</Value>
+                                                                                <Style>
+                                                                                  <FontFamily>Arial</FontFamily>
+                                                                                </Style>
+                                                                              </TextRun>
+                                                                            </TextRuns>
+                                                                            <Style />
+                                                                          </Paragraph>
+                                                                        </Paragraphs>
+                                                                        <Style>
+                                                                          <Border>
+                                                                            <Color>LightGrey</Color>
+                                                                            <Style>Solid</Style>
+                                                                          </Border>
+                                                                          <PaddingLeft>2pt</PaddingLeft>
+                                                                          <PaddingRight>2pt</PaddingRight>
+                                                                          <PaddingTop>2pt</PaddingTop>
+                                                                          <PaddingBottom>2pt</PaddingBottom>
+                                                                        </Style>
+                                                                      </Textbox>
+                                                                    </CellContents>
+                                                                  </TablixHeader>
+                                                                  <TablixMembers>
+                                                                    <TablixMember>
+                                                                      <Group Name="Country">
+                                                                        <GroupExpressions>
+                                                                          <GroupExpression>=Fields!Country.Value</GroupExpression>
+                                                                        </GroupExpressions>
+                                                                      </Group>
+                                                                      <SortExpressions>
+                                                                        <SortExpression>
+                                                                          <Value>=Fields!Country.Value</Value>
+                                                                        </SortExpression>
+                                                                      </SortExpressions>
+                                                                      <TablixHeader>
+                                                                        <Size>41.72165mm</Size>
+                                                                        <CellContents>
+                                                                          <Textbox Name="Country1">
+                                                                            <rd:DefaultName>Country1</rd:DefaultName>
+                                                                            <CanGrow>true</CanGrow>
+                                                                            <KeepTogether>true</KeepTogether>
+                                                                            <Paragraphs>
+                                                                              <Paragraph>
+                                                                                <TextRuns>
+                                                                                  <TextRun>
+                                                                                    <Value>=IIF(ISNOTHING(Fields!Country.Value),"NA",Fields!Country.Value)</Value>
+                                                                                    <Style>
+                                                                                      <FontFamily>Arial</FontFamily>
+                                                                                    </Style>
+                                                                                  </TextRun>
+                                                                                </TextRuns>
+                                                                                <Style />
+                                                                              </Paragraph>
+                                                                            </Paragraphs>
+                                                                            <Style>
+                                                                              <Border>
+                                                                                <Color>LightGrey</Color>
+                                                                                <Style>Solid</Style>
+                                                                              </Border>
+                                                                              <PaddingLeft>2pt</PaddingLeft>
+                                                                              <PaddingRight>2pt</PaddingRight>
+                                                                              <PaddingTop>2pt</PaddingTop>
+                                                                              <PaddingBottom>2pt</PaddingBottom>
+                                                                            </Style>
+                                                                          </Textbox>
+                                                                        </CellContents>
+                                                                      </TablixHeader>
+                                                                      <TablixMembers>
+                                                                        <TablixMember>
+                                                                          <Group Name="Details1" />
+                                                                        </TablixMember>
+                                                                      </TablixMembers>
+                                                                    </TablixMember>
+                                                                  </TablixMembers>
+                                                                </TablixMember>
+                                                              </TablixMembers>
+                                                            </TablixMember>
+                                                          </TablixMembers>
+                                                        </TablixMember>
+                                                      </TablixMembers>
+                                                    </TablixMember>
+                                                  </TablixMembers>
+                                                </TablixMember>
+                                              </TablixMembers>
+                                            </TablixMember>
+                                          </TablixMembers>
+                                        </TablixMember>
+                                      </TablixMembers>
+                                    </TablixMember>
+                                  </TablixMembers>
+                                </TablixMember>
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>ListOfCompanyDS</DataSetName>
+            <Top>8.60778mm</Top>
+            <Left>4.6567mm</Left>
+            <Height>22.75416mm</Height>
+            <Width>534.73894mm</Width>
+            <ZIndex>1</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>31.36194mm</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>539.39564mm</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="Company">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CompanyDropDownDS</DataSetName>
+          <ValueField>CompanyId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Company Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CompanyDropDownDS</DataSetName>
+          <ValueField>CompanyId</ValueField>
+          <LabelField>CompanyName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="PrimaryEmployee">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>PrimaryEmployeeDropDownDS</DataSetName>
+          <ValueField>PrimaryEmployeeId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Primary Employee Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>PrimaryEmployeeDropDownDS</DataSetName>
+          <ValueField>PrimaryEmployeeId</ValueField>
+          <LabelField>PrimaryEmployeeName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="BusinessType">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>BusinessTypeDropDown</DataSetName>
+          <ValueField>BusinessTypeId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Business Type</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>BusinessTypeDropDown</DataSetName>
+          <ValueField>BusinessTypeId</ValueField>
+          <LabelField>BusinessType</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="CompanyStatus">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CompanyStatusDropDownDS</DataSetName>
+          <ValueField>StatusId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Company Status</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CompanyStatusDropDownDS</DataSetName>
+          <ValueField>StatusId</ValueField>
+          <LabelField>CompanyStatus</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Company</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>PrimaryEmployee</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>BusinessType</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>CompanyStatus</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+</Report>

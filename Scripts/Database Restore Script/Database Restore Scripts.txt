@@ -1,0 +1,167 @@
+ @echo off
+SETLOCAL ENABLEDELAYEDEXPANSION
+
+:: ============================================================
+:: DEBUG MODE (1 = ON, 0 = OFF)
+:: ============================================================
+SET DEBUG=1
+
+:: ============================================================
+:: CONFIG
+:: ============================================================
+SET SERVER=67.211.217.118
+SET SQL_USER=Meldep_Dev_3_2
+SET SQL_PWD=NQ88pRzi933u7oY
+
+SET SOURCE_DB=Meldep_Dev_V3-2
+SET TARGET_DB=Meldep_Live_v3-2_Reporting
+
+SET BASELOCATION=C:\Automated Database Clone\%TARGET_DB%
+SET BACKUP_FILE=%BASELOCATION%\%SOURCE_DB%.bak
+
+SET DATA_FILE=%BASELOCATION%\%TARGET_DB%.mdf
+SET LOG_FILE_DB=%BASELOCATION%\%TARGET_DB%_log.ldf
+
+SET SCRIPT_FILE=%BASELOCATION%\%SOURCE_DB%_SQLQuery.sql
+
+:: ============================================================
+:: STATIC LOGICAL NAMES (SET THESE CORRECTLY)
+:: ============================================================
+SET LOGICAL_DATA=db_a48d23_vsky_Data
+SET LOGICAL_LOG=db_a48d23_vsky_Log
+
+:: ============================================================
+:: EMAIL CONFIG
+:: ============================================================
+SET smtp_server=smtp.office365.com
+SET smtp_port=587
+SET smtp_user=noreply-smtp@vskysolutions.com
+SET smtp_pass=XNUa2TdsvS
+
+SET mail_from=noreply-smtp@vskysolutions.com
+SET mail_to=anushka.joshi@vskysolutions.com
+
+:: ============================================================
+:: LOGGING SETUP
+:: ============================================================
+for /f "tokens=1-3 delims=/ " %%a in ("%date%") do (
+    set YYYY=%%c
+    set MM=%%a
+    set DD=%%b
+)
+
+for /f "tokens=1-3 delims=:." %%a in ("%time%") do (
+    set HH=%%a
+    set MIN=%%b
+    set SEC=%%c
+)
+
+set LOG_DIR=%BASELOCATION%\logs
+IF NOT EXIST "%LOG_DIR%" mkdir "%LOG_DIR%"
+
+set LOG_FILE=%LOG_DIR%\restore_%YYYY%-%MM%-%DD%_%HH%-%MIN%-%SEC%.log
+
+call :log "========== START =========="
+
+:: ============================================================
+:: STEP 0 — Ensure directory exists
+:: ============================================================
+IF NOT EXIST "%BASELOCATION%" (
+    mkdir "%BASELOCATION%" >> "%LOG_FILE%" 2>&1
+    IF !ERRORLEVEL! NEQ 0 call :fail "Directory creation failed"
+)
+
+:: ============================================================
+:: STEP 1 — Backup
+:: ============================================================
+call :log "STEP 1: Backup started"
+call :execSQL "BACKUP DATABASE [%SOURCE_DB%] TO DISK = N'%BACKUP_FILE%' WITH INIT, STATS = 5;" "Backup failed"
+
+:: ============================================================
+:: STEP 2 — Force exclusive access + Restore in ONE connection
+:: ============================================================
+call :log "STEP 2: Setting SINGLE_USER and restoring database"
+
+ssqlcmd -S %SERVER% -U %SQL_USER% -P %SQL_PWD% -b -Q "ALTER DATABASE [%TARGET_DB%] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; RESTORE DATABASE [%TARGET_DB%] FROM DISK = N'%BACKUP_FILE%' WITH REPLACE, MOVE N'%LOGICAL_DATA%' TO N'%DATA_FILE%', MOVE N'%LOGICAL_LOG%' TO N'%LOG_FILE_DB%', RECOVERY, STATS = 5;" >> "%LOG_FILE%" 2>&1
+ 
+IF !ERRORLEVEL! NEQ 0 (
+    call :fail "Restore failed"
+    EXIT 1
+)
+
+:: RECOVERY brings DB back to MULTI_USER automatically, but set explicitly to be safe
+call :log "STEP 2: Setting target DB back to MULTI_USER"
+call :execSQL "ALTER DATABASE [%TARGET_DB%] SET MULTI_USER;" "Failed to set MULTI_USER"
+
+:: ============================================================
+:: STEP 2.5 — Fix Orphaned Users 
+:: ============================================================
+call :log "STEP 2.5: Re-linking reporting user login mapping"
+call :execSQL "USE [%TARGET_DB%]; IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name='Meldep_Live_v3-2_Reporting_OW') BEGIN CREATE USER [Meldep_Live_v3-2_Reporting_OW] FOR LOGIN [Meldep_Live_v3-2_Reporting_OW]; END ELSE BEGIN ALTER USER [Meldep_Live_v3-2_Reporting_OW] WITH LOGIN=[Meldep_Live_v3-2_Reporting_OW]; END ALTER ROLE db_owner ADD MEMBER [Meldep_Live_v3-2_Reporting_OW];" "Failed to fix orphaned user mapping"
+
+:: ============================================================
+:: STEP 3 — Post Script (optional)
+:: ============================================================
+call :log "STEP 3: Post script"
+
+IF EXIST "%SCRIPT_FILE%" (
+    call :log "Running post script: %SCRIPT_FILE%"
+    sqlcmd -S %SERVER% -U %SQL_USER% -P %SQL_PWD% -i "%SCRIPT_FILE%" >> "%LOG_FILE%" 2>&1
+    IF !ERRORLEVEL! NEQ 0 call :fail "Post script failed"
+) ELSE (
+    call :log "No post script found, skipping"
+)
+
+:: ============================================================
+:: SUCCESS
+:: ============================================================
+call :log "SUCCESS: %TARGET_DB% restored successfully"
+call :sendEmail "SUCCESS: %TARGET_DB% restored (Log: %LOG_FILE%)"
+
+EXIT /B 0
+
+:: ============================================================
+:: EXEC SQL
+:: ============================================================
+:execSQL
+set QUERY=%~1
+set ERR=%~2
+
+IF "%DEBUG%"=="1" (
+    call :log "Executing: %QUERY%"
+)
+
+sqlcmd -S %SERVER% -U %SQL_USER% -P %SQL_PWD% -b -Q "%QUERY%" >> "%LOG_FILE%" 2>&1
+
+IF !ERRORLEVEL! NEQ 0 (
+    call :fail "%ERR%"
+    EXIT  1
+)
+goto :eof
+
+:: ============================================================
+:: LOG FUNCTION
+:: ============================================================
+:log
+set msg=%~1
+echo [%date% %time%] %msg%
+echo [%date% %time%] %msg% >> "%LOG_FILE%"
+goto :eof
+
+:: ============================================================
+:: FAIL HANDLER
+:: ============================================================
+:fail
+set ERR_MSG=%~1
+call :log "FATAL ERROR: %ERR_MSG%"
+call :sendEmail "FAILED: %ERR_MSG% (Log: %LOG_FILE%)"
+EXIT  1
+
+:: ============================================================
+:: EMAIL FUNCTION
+:: ============================================================
+:sendEmail
+set subject=%~1
+powershell -NoProfile -Command ^
+"Send-MailMessage -To '%mail_to%' -From '%mail_from%' -Subject '%subject%' -Body '%subject%' -SmtpServer '%smtp_server%' -Port %smtp_port% -UseSsl -Credential (New-Object PSCredential('%smtp_user%', (ConvertTo-SecureString '%smtp_pass%' -AsPlainText -Force)))"
+goto :eof

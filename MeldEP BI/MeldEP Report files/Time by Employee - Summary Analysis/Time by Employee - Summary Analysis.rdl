@@ -1,0 +1,2031 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Inch</rd:ReportUnitType>
+  <rd:ReportID>4918f47b-aca7-48a5-b05f-aaf1dead8db7</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1809.28</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T17:14:00.5064076Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="Meldep32Live">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=Meldep_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source Meldep32Live:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>e7ee4918-909f-4616-8f2a-ce24b8901551</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="WeeklyTimesheetSumaaryDataSet">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@FromDate">
+            <Value>=Parameters!FromDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ToDate">
+            <Value>=Parameters!ToDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SET DATEFIRST 1;
+
+WITH WeekRange AS (
+    SELECT DISTINCT
+        DATEADD(DAY, 1 - DATEPART(WEEKDAY, TheDate), TheDate) AS TheFirstOfWeek,
+        DATEADD(DAY, 7 - DATEPART(WEEKDAY, TheDate), TheDate) AS TheLastOfWeek
+    FROM DimDate
+    WHERE TheDate BETWEEN @FromDate AND @ToDate
+),
+
+EmployeeDetails AS (
+    SELECT 
+        e.Id AS EmployeeId,
+        p.FirstName + ' ' + p.LastName AS EmployeeName,
+        es.EmployeeStatusId AS StatusId,
+        dd.DropDownValue AS Status
+    FROM Employee e
+    INNER JOIN Person p ON p.Id = e.PersonId AND p.Deleted != 1
+    LEFT JOIN EmployeeStatus es ON es.EmployeeId = e.Id AND es.Deleted != 1
+    LEFT JOIN DropDown dd ON dd.Id = es.EmployeeStatusId AND dd.Deleted != 1 AND dd.dropdownvalue= 'Active'
+    LEFT JOIN EmployeeType et ON e.Id = et.EmployeeId
+    LEFT JOIN Dropdown emptype ON emptype.Id = et.EmployeetypeId
+    WHERE e.Deleted != 1 and 
+          e.active=1 and 
+          es.employeestatusid is not null and
+          emptype.dropdownvalue not in('Ex-Employee','On Contract','Consultant','Close')
+          and e.id NOT IN('1376F665-F831-4A7E-8502-6A6D0DBE01B4',
+                          '50d748b8-5e03-4f14-ba6b-f4fadfaafea1',
+                          '040B2C55-B056-4D2D-8F26-1E4A94556F0F')
+),
+
+-- Every employee × every week
+
+
+EmployeeWeekMap AS (
+    SELECT 
+        ed.EmployeeId,
+        ed.EmployeeName,
+        ed.StatusId,
+        ed.Status,
+        wr.TheFirstOfWeek,
+        wr.TheLastOfWeek
+    FROM EmployeeDetails ed
+    CROSS JOIN WeekRange wr
+),
+
+TimesheetDetail AS (
+    SELECT
+        t.EmployeeId,
+        wr.TheFirstOfWeek,
+        wr.TheLastOfWeek,
+        SUM(tl.Hours) AS FilledHours
+    FROM Timesheet t
+    INNER JOIN TimesheetLines tl ON tl.TimesheetId = t.Id AND tl.Deleted != 1
+    INNER JOIN ProjectActivities pa ON pa.Id = tl.ProjectActivityId
+    INNER JOIN WeekRange wr ON wr.TheFirstOfWeek &lt;= t.TimesheetDate 
+                             AND wr.TheLastOfWeek &gt;= t.TimesheetDate
+    WHERE 
+        t.TimesheetDate BETWEEN @FromDate AND @ToDate
+        AND (t.Deleted = 0 OR t.Deleted IS NULL)
+        AND pa.ProjectId IN (@Projects)
+    GROUP BY 
+        t.EmployeeId, wr.TheFirstOfWeek, wr.TheLastOfWeek
+),
+
+WeeklySummary AS (
+    SELECT 
+        ewm.EmployeeId,
+        ewm.EmployeeName,
+        ewm.StatusId,
+        ewm.Status,
+        FORMAT(ewm.TheFirstOfWeek, 'MM/dd/yy') + ' - ' + FORMAT(ewm.TheLastOfWeek, 'MM/dd/yy') AS WeekInterval,
+        ISNULL(td.FilledHours, 0) AS Hours
+    FROM EmployeeWeekMap ewm
+    LEFT JOIN TimesheetDetail td
+        ON td.EmployeeId = ewm.EmployeeId
+        AND td.TheFirstOfWeek = ewm.TheFirstOfWeek
+        AND td.TheLastOfWeek = ewm.TheLastOfWeek
+)
+
+SELECT DISTINCT
+    EmployeeId,
+ 
+    EmployeeName,
+    WeekInterval,
+    StatusId,
+    Hours
+FROM WeeklySummary
+ORDER BY EmployeeName, WeekInterval;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="EmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeId</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+        <Field Name="WeekInterval">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>WeekInterval</DataField>
+        </Field>
+        <Field Name="StatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Hours">
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <DataField>Hours</DataField>
+        </Field>
+      </Fields>
+      <Filters>
+        <Filter>
+          <FilterExpression>=Fields!EmployeeId.Value</FilterExpression>
+          <Operator>In</Operator>
+          <FilterValues>
+            <FilterValue>=Parameters!Employees.Value</FilterValue>
+          </FilterValues>
+        </Filter>
+      </Filters>
+    </DataSet>
+    <DataSet Name="StatusDropDownDS">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <CommandText>WITH StatusDetails AS (
+SELECT 
+        ES.EmployeeStatusId AS StatusId,
+		StatusDD.DropDownValue AS Status,
+		ROW_NUMBER()OVER(PARTITION BY E.Id ORDER BY ES.StartDate DESC) AS RowNum
+    FROM Employee E
+	LEFT JOIN EmployeeStatus ES ON E.Id = ES.EmployeeId
+    LEFT JOIN DropDown StatusDD ON StatusDD.Id = ES.EmployeeStatusId
+    WHERE ES.Deleted!=1
+)
+
+SELECT DISTINCT
+SD.StatusId,
+SD.Status
+FROM StatusDetails SD
+WHERE SD.RowNum=1 
+ORDER BY Status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectDropDownDS">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Customers">
+            <Value>=Parameters!Customers.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH ProjectDetailsList AS (
+    SELECT DISTINCT
+        P.Id AS ProjectId,
+        P.[Name] AS Project,
+        CASE 
+            WHEN P.Active = 1 THEN 1
+            ELSE 0
+        END AS StatusId,
+        CASE 
+            WHEN P.Active = 1 THEN 'Active'
+            ELSE 'Inactive'
+        END AS Status,
+        CPL.CustomerId
+    FROM Projects P
+    JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
+    WHERE P.Deleted != 1
+)
+SELECT PD.ProjectId, PD.Project
+FROM ProjectDetailsList PD
+WHERE --PD.StatusId IN (@Status) and 
+PD.CustomerId IN (@Customers)
+ORDER BY Project</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="Project">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectActiveStatusDropDownDS">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <CommandText>SELECT DISTINCT
+                CASE 
+		WHEN P.Active=1 THEN 1
+		WHEN P.Active=0 THEN 0
+	END AS StatusId,
+	CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status
+FROM Projects P
+WHERE
+	P.Deleted!=1 
+ORDER BY Status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ClientDropDownDS">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>WITH ProjectDetailsList AS (
+    SELECT DISTINCT
+        CASE 
+            WHEN P.Active = 1 THEN 1
+            ELSE 0
+        END AS StatusId,
+        CASE 
+            WHEN P.Active = 1 THEN 'Active'
+            ELSE 'Inactive'
+        END AS Status,
+        CPL.CustomerId,
+		C.CustomerName
+    FROM Projects P
+    JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
+	JOIN  VW_CustomerList C ON C.Id=CPL.CustomerId
+    WHERE P.Deleted != 1
+)
+SELECT distinct PD.CustomerId, PD.CustomerName
+FROM ProjectDetailsList PD
+--WHERE PD.StatusId IN (@Status)
+ORDER BY CustomerName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="SelectedParameter">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <CommandText>Select 1 as Dummy</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Dummy">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Dummy</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="EmployeeDropDownDS">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@TeamLead">
+            <Value>=Parameters!TeamLead.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>WITH EmployeeRanked AS (
+    SELECT DISTINCT
+        E.Id AS EmployeeId,
+        P.FirstName + ' ' + P.LastName AS EmployeeName,
+        ES.EmployeeStatusId AS StatusId,
+        ROW_NUMBER() OVER (PARTITION BY E.Id ORDER BY ES.StartDate DESC) AS RowNum,
+        eos.ManagerId
+    FROM Employee E
+    JOIN EmployeeStatus ES ON E.Id = ES.EmployeeId
+    JOIN Dropdown DD ON DD.Id = ES.EmployeeStatusId
+    JOIN EmployeeType et ON E.Id = et.EmployeeId
+    JOIN Dropdown emptype ON emptype.Id = et.EmployeeTypeId
+    JOIN Person P ON P.Id = E.PersonId AND P.Deleted != 1
+    LEFT JOIN EmployeeOrgStructure eos ON eos.EmployeeId = E.Id
+    LEFT JOIN ProjectActivities PA ON PA.AssignedToId = E.Id AND PA.Deleted != 1
+
+    WHERE 
+        E.Deleted != 1
+        AND E.Active = 1
+        AND DD.DropdownValue = 'Current'
+        AND emptype.DropDownValue NOT IN ('On Contract','Consultant','Close')
+        AND PA.ProjectId IN (@Projects)
+
+        -- ▼▼ Team Lead Parameter Logic ▼▼
+        AND (
+                ('NA' IN (@TeamLead) AND eos.ManagerId IS NULL)   -- show employees with no TL
+                OR
+                (eos.ManagerId IN (@TeamLead))                    -- employees under TL
+                OR
+                (E.Id IN (@TeamLead))                             -- include TL themselves
+            )
+)
+
+SELECT DISTINCT
+    EmployeeId,
+    EmployeeName,
+    StatusId
+FROM EmployeeRanked
+WHERE RowNum = 1
+ORDER BY EmployeeName;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="EmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeId</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+        <Field Name="StatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="EmployeeHalfDayLeave">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ToDate">
+            <Value>=Parameters!ToDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@FromDate">
+            <Value>=Parameters!FromDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Employees">
+            <Value>=Parameters!Employees.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT 
+    emplv.employeeid,
+    p.firstname + ' ' + p.lastname AS EmployeeName,
+    SUM(emplv.noofleaves) AS TotalLeaves,
+    emplv.FromDate,
+    emplv.ToDate,
+    emplv.ishalfday
+FROM employeeleave emplv
+JOIN employee e ON emplv.employeeid = e.id
+JOIN person p ON p.id = e.personid
+INNER JOIN DropDown dd ON emplv.LeaveStatusId = dd.Id
+WHERE emplv.IsHalfDay = 1        -- Half-day condition
+  AND emplv.FromDate &lt;= @ToDate   -- Date range overlap check
+  AND emplv.ToDate   &gt;= @FromDate
+  AND dd.DropDownValue NOT IN ('Decline', 'Cancelled')
+  AND emplv.employeeid IN (@Employees)
+ AND emplv.Deleted=0
+GROUP BY 
+    emplv.employeeid, 
+    p.firstname + ' ' + p.lastname,
+    emplv.FromDate,
+    emplv.ToDate,
+    emplv.ishalfday
+ORDER BY EmployeeName ASC;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="employeeid">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>employeeid</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+        <Field Name="TotalLeaves">
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <DataField>TotalLeaves</DataField>
+        </Field>
+        <Field Name="FromDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>FromDate</DataField>
+        </Field>
+        <Field Name="ToDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>ToDate</DataField>
+        </Field>
+        <Field Name="ishalfday">
+          <rd:TypeName>System.Boolean</rd:TypeName>
+          <DataField>ishalfday</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="EmployeeFullDayLeave">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@FromDate">
+            <Value>=Parameters!FromDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ToDate">
+            <Value>=Parameters!ToDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Employees">
+            <Value>=Parameters!Employees.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT 
+    emplv.employeeid,
+    p.firstname + ' ' + p.lastname AS EmployeeName,
+    SUM(CAST(noofleaves AS int)) AS TotalLeaves,
+    emplv.ishalfday,
+    MIN(emplv.FromDate) AS MinDate,
+    MAX(emplv.ToDate) AS MaxDate
+FROM employeeleave emplv
+INNER JOIN employee e ON emplv.employeeid = e.id
+INNER JOIN person p ON p.id = e.personid
+INNER  JOIN DropDown dd ON emplv.LeaveStatusId = dd.Id
+WHERE emplv.IsHalfDay = 0
+  AND emplv.FromDate &lt;= @ToDate     
+  AND emplv.ToDate   &gt;= @FromDate 
+  AND emplv.employeeid IN (@Employees)
+  AND dd.DropDownValue NOT IN ('Decline', 'Cancelled')
+  AND emplv.Deleted=0
+GROUP BY emplv.employeeid, p.firstname + ' ' + p.lastname,ishalfday
+ORDER BY EmployeeName ASC</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="employeeid">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>employeeid</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+        <Field Name="TotalLeaves">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>TotalLeaves</DataField>
+        </Field>
+        <Field Name="ishalfday">
+          <rd:TypeName>System.Boolean</rd:TypeName>
+          <DataField>ishalfday</DataField>
+        </Field>
+        <Field Name="MinDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>MinDate</DataField>
+        </Field>
+        <Field Name="MaxDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>MaxDate</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="TeamLeadDropDown">
+      <Query>
+        <DataSourceName>Meldep32Live</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT 'NA' AS ManagerId, 'NA' AS ManagerName
+UNION ALL
+SELECT distinct
+    eos.ManagerId,
+    (pm.FirstName + ' ' + pm.LastName) AS ManagerName
+FROM EmployeeOrgStructure eos
+LEFT JOIN Employee m
+    ON m.Id = eos.ManagerId         
+LEFT JOIN Person pm
+    ON pm.Id = m.PersonId
+order by ManagerName;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ManagerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ManagerId</DataField>
+        </Field>
+        <Field Name="ManagerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ManagerName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Tablix Name="Tablix8">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>1.59896in</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>12.88153in</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.35417in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox1">
+                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Parameters</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontSize>18pt</FontSize>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>White</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>White</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                        <ColSpan>2</ColSpan>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell />
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.29688in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox53">
+                          <rd:DefaultName>Textbox53</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Parameter</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox55">
+                          <rd:DefaultName>Textbox55</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Parameter Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.25616in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox54">
+                          <rd:DefaultName>Textbox54</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Customer Name</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="CustomerName">
+                          <rd:DefaultName>CustomerName</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=JOIN(Parameters!Customers.Label,",")</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.26421in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox77">
+                          <rd:DefaultName>Textbox77</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Project Name</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox78">
+                          <rd:DefaultName>Textbox78</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=JOIN(Parameters!Projects.Label,",")</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox5">
+                          <rd:DefaultName>Textbox5</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Team Lead</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox6">
+                          <rd:DefaultName>Textbox6</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=JOIN(Parameters!TeamLead.Label,",")</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.25in</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox9">
+                          <rd:DefaultName>Textbox9</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Employee Name</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox10">
+                          <rd:DefaultName>Textbox10</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=JOIN(Parameters!Employees.Label,",")</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <FixedData>true</FixedData>
+                </TablixMember>
+                <TablixMember>
+                  <FixedData>true</FixedData>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="Details">
+                    <PageName>Parameters</PageName>
+                  </Group>
+                  <TablixMembers>
+                    <TablixMember />
+                    <TablixMember />
+                    <TablixMember />
+                    <TablixMember />
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>SelectedParameter</DataSetName>
+            <PageBreak>
+              <BreakLocation>Start</BreakLocation>
+            </PageBreak>
+            <Top>2.59932in</Top>
+            <Left>0.0225in</Left>
+            <Height>1.67142in</Height>
+            <Width>14.48049in</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+          <Rectangle Name="Rectangle1">
+            <ReportItems>
+              <Textbox Name="ReportTitle">
+                <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+                <rd:DefaultName>ReportTitle</rd:DefaultName>
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>="Time by Employee - Summary Analysis (Based on Org Structure)"</Value>
+                        <Style>
+                          <FontFamily>Arial</FontFamily>
+                          <FontSize>16pt</FontSize>
+                          <FontWeight>Bold</FontWeight>
+                        </Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style>
+                      <TextAlign>Left</TextAlign>
+                    </Style>
+                  </Paragraph>
+                </Paragraphs>
+                <Left>0.09101cm</Left>
+                <Height>0.34028in</Height>
+                <Width>9.8525in</Width>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+              <Textbox Name="Textbox2">
+                <rd:DefaultName>Textbox2</rd:DefaultName>
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>="This report displays a weekly summary of timesheet hours for employees from " 
+&amp; FORMAT(Parameters!FromDate.Value, "MM/dd/yyyy") 
+&amp; " to " 
+&amp; FORMAT(Parameters!ToDate.Value, "MM/dd/yyyy") 
+&amp; " and based on the organizational hierarchy currently available in the system. Results are shown based on the selected team lead. Some team members may not appear if their hierarchy details are not yet updated."</Value>
+                        <Style>
+                          <FontStyle>Italic</FontStyle>
+                          <FontFamily>Times New Roman</FontFamily>
+                          <FontSize>12pt</FontSize>
+                          <FontWeight>Normal</FontWeight>
+                          <TextDecoration>None</TextDecoration>
+                          <Color>#000000</Color>
+                        </Style>
+                      </TextRun>
+                    </TextRuns>
+                    <Style />
+                  </Paragraph>
+                </Paragraphs>
+                <Top>0.36806in</Top>
+                <Left>0.045in</Left>
+                <Height>0.30131in</Height>
+                <Width>7.16916in</Width>
+                <ZIndex>1</ZIndex>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+              <Tablix Name="Tablix1">
+                <TablixCorner>
+                  <TablixCornerRows>
+                    <TablixCornerRow>
+                      <TablixCornerCell>
+                        <CellContents>
+                          <Textbox Name="Textbox11">
+                            <rd:DefaultName>Textbox11</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>Employee Name</Value>
+                                    <Style>
+                                      <FontSize>12pt</FontSize>
+                                      <FontWeight>Bold</FontWeight>
+                                      <Color>White</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#1b75ab</BackgroundColor>
+                              <VerticalAlign>Middle</VerticalAlign>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                          <RowSpan>2</RowSpan>
+                        </CellContents>
+                      </TablixCornerCell>
+                    </TablixCornerRow>
+                    <TablixCornerRow>
+                      <TablixCornerCell />
+                    </TablixCornerRow>
+                  </TablixCornerRows>
+                </TablixCorner>
+                <TablixBody>
+                  <TablixColumns>
+                    <TablixColumn>
+                      <Width>0.81771in</Width>
+                    </TablixColumn>
+                    <TablixColumn>
+                      <Width>0.98958in</Width>
+                    </TablixColumn>
+                  </TablixColumns>
+                  <TablixRows>
+                    <TablixRow>
+                      <Height>0.29924in</Height>
+                      <TablixCells>
+                        <TablixCell>
+                          <CellContents>
+                            <Textbox Name="Textbox13">
+                              <rd:DefaultName>Textbox13</rd:DefaultName>
+                              <CanGrow>true</CanGrow>
+                              <KeepTogether>true</KeepTogether>
+                              <Paragraphs>
+                                <Paragraph>
+                                  <TextRuns>
+                                    <TextRun>
+                                      <Value>=IIf(IsNothing(Sum(Fields!Hours.Value)), 0, Sum(Fields!Hours.Value))</Value>
+                                      <Style />
+                                    </TextRun>
+                                  </TextRuns>
+                                  <Style />
+                                </Paragraph>
+                              </Paragraphs>
+                              <Style>
+                                <Border>
+                                  <Color>LightGrey</Color>
+                                  <Style>Solid</Style>
+                                </Border>
+                                <BackgroundColor>White</BackgroundColor>
+                                <PaddingLeft>2pt</PaddingLeft>
+                                <PaddingRight>2pt</PaddingRight>
+                                <PaddingTop>2pt</PaddingTop>
+                                <PaddingBottom>2pt</PaddingBottom>
+                              </Style>
+                            </Textbox>
+                          </CellContents>
+                        </TablixCell>
+                        <TablixCell>
+                          <CellContents>
+                            <Chart Name="DataBar3">
+                              <ChartCategoryHierarchy>
+                                <ChartMembers>
+                                  <ChartMember>
+                                    <Label />
+                                  </ChartMember>
+                                </ChartMembers>
+                              </ChartCategoryHierarchy>
+                              <ChartSeriesHierarchy>
+                                <ChartMembers>
+                                  <ChartMember>
+                                    <Label>Hours</Label>
+                                  </ChartMember>
+                                </ChartMembers>
+                              </ChartSeriesHierarchy>
+                              <ChartData>
+                                <ChartSeriesCollection>
+                                  <ChartSeries Name="Hours">
+                                    <ChartDataPoints>
+                                      <ChartDataPoint>
+                                        <ChartDataPointValues>
+                                          <Y>=Sum(Fields!Hours.Value)</Y>
+                                        </ChartDataPointValues>
+                                        <ChartDataLabel>
+                                          <Style>
+                                            <FontFamily>Arial</FontFamily>
+                                            <FontWeight>Bold</FontWeight>
+                                          </Style>
+                                          <UseValueAsLabel>true</UseValueAsLabel>
+                                          <Visible>true</Visible>
+                                        </ChartDataLabel>
+                                        <ActionInfo>
+                                          <Actions>
+                                            <Action>
+                                              <Drillthrough>
+                                                <ReportName>Timesheet Detail Report</ReportName>
+                                                <Parameters>
+                                                  <Parameter Name="FromDate">
+                                                    <Value>=Parameters!FromDate.Value</Value>
+                                                  </Parameter>
+                                                  <Parameter Name="ToDate">
+                                                    <Value>=Parameters!ToDate.Value</Value>
+                                                  </Parameter>
+                                                  <Parameter Name="EmployeeName">
+                                                    <Value>=Fields!EmployeeId.Value</Value>
+                                                  </Parameter>
+                                                  <Parameter Name="Customer">
+                                                    <Value>=Parameters!Customers.Value</Value>
+                                                  </Parameter>
+                                                  <Parameter Name="Projects">
+                                                    <Value>=Parameters!Projects.Value</Value>
+                                                  </Parameter>
+                                                </Parameters>
+                                              </Drillthrough>
+                                            </Action>
+                                          </Actions>
+                                        </ActionInfo>
+                                        <Style>
+                                          <Color>#ffdab9</Color>
+                                        </Style>
+                                        <ChartMarker>
+                                          <Style />
+                                        </ChartMarker>
+                                        <DataElementOutput>Output</DataElementOutput>
+                                      </ChartDataPoint>
+                                    </ChartDataPoints>
+                                    <Type>Bar</Type>
+                                    <Style />
+                                    <ChartEmptyPoints>
+                                      <Style />
+                                      <ChartMarker>
+                                        <Style />
+                                      </ChartMarker>
+                                      <ChartDataLabel>
+                                        <Style />
+                                      </ChartDataLabel>
+                                    </ChartEmptyPoints>
+                                    <ValueAxisName>Primary</ValueAxisName>
+                                    <CategoryAxisName>Primary</CategoryAxisName>
+                                    <ChartSmartLabel>
+                                      <CalloutLineColor>Black</CalloutLineColor>
+                                      <MinMovingDistance>0pt</MinMovingDistance>
+                                    </ChartSmartLabel>
+                                  </ChartSeries>
+                                </ChartSeriesCollection>
+                              </ChartData>
+                              <ChartAreas>
+                                <ChartArea Name="Default">
+                                  <ChartCategoryAxes>
+                                    <ChartAxis Name="Primary">
+                                      <Visible>False</Visible>
+                                      <Style>
+                                        <Border>
+                                          <Color>Gainsboro</Color>
+                                          <Style>None</Style>
+                                        </Border>
+                                        <FontSize>8pt</FontSize>
+                                        <Color>#5c5c5c</Color>
+                                      </Style>
+                                      <ChartAxisTitle>
+                                        <Caption />
+                                        <Style>
+                                          <FontSize>9pt</FontSize>
+                                          <Color>#5c5c5c</Color>
+                                        </Style>
+                                      </ChartAxisTitle>
+                                      <Margin>False</Margin>
+                                      <ChartMajorGridLines>
+                                        <Enabled>False</Enabled>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorGridLines>
+                                      <ChartMinorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>Dotted</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMinorGridLines>
+                                      <ChartMajorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>None</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorTickMarks>
+                                      <ChartMinorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                        <Length>0.5</Length>
+                                      </ChartMinorTickMarks>
+                                      <CrossAt>NaN</CrossAt>
+                                      <Minimum>NaN</Minimum>
+                                      <Maximum>NaN</Maximum>
+                                      <ChartAxisScaleBreak>
+                                        <Style />
+                                      </ChartAxisScaleBreak>
+                                    </ChartAxis>
+                                    <ChartAxis Name="Secondary">
+                                      <Visible>False</Visible>
+                                      <Style>
+                                        <Border>
+                                          <Color>Gainsboro</Color>
+                                          <Style>None</Style>
+                                        </Border>
+                                        <FontSize>8pt</FontSize>
+                                        <Color>#5c5c5c</Color>
+                                      </Style>
+                                      <ChartAxisTitle>
+                                        <Caption />
+                                        <Style>
+                                          <FontSize>9pt</FontSize>
+                                          <Color>#5c5c5c</Color>
+                                        </Style>
+                                      </ChartAxisTitle>
+                                      <Margin>False</Margin>
+                                      <ChartMajorGridLines>
+                                        <Enabled>False</Enabled>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorGridLines>
+                                      <ChartMinorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>Dotted</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMinorGridLines>
+                                      <ChartMajorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>None</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorTickMarks>
+                                      <ChartMinorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                        <Length>0.5</Length>
+                                      </ChartMinorTickMarks>
+                                      <CrossAt>NaN</CrossAt>
+                                      <Location>Opposite</Location>
+                                      <Minimum>NaN</Minimum>
+                                      <Maximum>NaN</Maximum>
+                                      <ChartAxisScaleBreak>
+                                        <Style />
+                                      </ChartAxisScaleBreak>
+                                    </ChartAxis>
+                                  </ChartCategoryAxes>
+                                  <ChartValueAxes>
+                                    <ChartAxis Name="Primary">
+                                      <Visible>False</Visible>
+                                      <Style>
+                                        <Border>
+                                          <Color>Gainsboro</Color>
+                                          <Style>None</Style>
+                                        </Border>
+                                        <FontSize>8pt</FontSize>
+                                        <Color>#5c5c5c</Color>
+                                      </Style>
+                                      <ChartAxisTitle>
+                                        <Caption />
+                                        <Style>
+                                          <FontSize>9pt</FontSize>
+                                          <Color>#5c5c5c</Color>
+                                        </Style>
+                                      </ChartAxisTitle>
+                                      <ChartMajorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorGridLines>
+                                      <ChartMinorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>Dotted</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMinorGridLines>
+                                      <ChartMajorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>None</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorTickMarks>
+                                      <ChartMinorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                        <Length>0.5</Length>
+                                      </ChartMinorTickMarks>
+                                      <CrossAt>NaN</CrossAt>
+                                      <Minimum>0</Minimum>
+                                      <Maximum>=Max(Sum(Fields!Hours.Value), "Tablix1")</Maximum>
+                                      <ChartAxisScaleBreak>
+                                        <Style />
+                                      </ChartAxisScaleBreak>
+                                      <rd:SyncScope>Tablix1</rd:SyncScope>
+                                      <rd:SyncMaximum>true</rd:SyncMaximum>
+                                    </ChartAxis>
+                                    <ChartAxis Name="Secondary">
+                                      <Visible>False</Visible>
+                                      <Style>
+                                        <Border>
+                                          <Color>Gainsboro</Color>
+                                          <Style>None</Style>
+                                        </Border>
+                                        <FontSize>8pt</FontSize>
+                                        <Color>#5c5c5c</Color>
+                                      </Style>
+                                      <ChartAxisTitle>
+                                        <Caption />
+                                        <Style>
+                                          <FontSize>9pt</FontSize>
+                                          <Color>#5c5c5c</Color>
+                                        </Style>
+                                      </ChartAxisTitle>
+                                      <ChartMajorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorGridLines>
+                                      <ChartMinorGridLines>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>Dotted</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMinorGridLines>
+                                      <ChartMajorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                            <Style>None</Style>
+                                          </Border>
+                                        </Style>
+                                      </ChartMajorTickMarks>
+                                      <ChartMinorTickMarks>
+                                        <Style>
+                                          <Border>
+                                            <Color>Gainsboro</Color>
+                                          </Border>
+                                        </Style>
+                                        <Length>0.5</Length>
+                                      </ChartMinorTickMarks>
+                                      <CrossAt>NaN</CrossAt>
+                                      <Location>Opposite</Location>
+                                      <Minimum>NaN</Minimum>
+                                      <Maximum>NaN</Maximum>
+                                      <ChartAxisScaleBreak>
+                                        <Style />
+                                      </ChartAxisScaleBreak>
+                                    </ChartAxis>
+                                  </ChartValueAxes>
+                                  <Style>
+                                    <BackgroundColor>#00ffffff</BackgroundColor>
+                                    <BackgroundGradientType>None</BackgroundGradientType>
+                                  </Style>
+                                  <ChartElementPosition>
+                                    <Top>10</Top>
+                                    <Left>3</Left>
+                                    <Height>80</Height>
+                                    <Width>96</Width>
+                                  </ChartElementPosition>
+                                </ChartArea>
+                              </ChartAreas>
+                              <Palette>BrightPastel</Palette>
+                              <ChartBorderSkin>
+                                <Style>
+                                  <BackgroundColor>Gray</BackgroundColor>
+                                  <BackgroundGradientType>None</BackgroundGradientType>
+                                  <Color>White</Color>
+                                </Style>
+                              </ChartBorderSkin>
+                              <ChartNoDataMessage Name="NoDataMessage">
+                                <Caption>No Data Available</Caption>
+                                <Style>
+                                  <BackgroundGradientType>None</BackgroundGradientType>
+                                  <FontWeight>Bold</FontWeight>
+                                  <TextAlign>General</TextAlign>
+                                  <VerticalAlign>Top</VerticalAlign>
+                                </Style>
+                              </ChartNoDataMessage>
+                              <rd:DesignerMode>DataBar</rd:DesignerMode>
+                              <DataSetName>WeeklyTimesheetSumaaryDataSet</DataSetName>
+                              <Style>
+                                <Border>
+                                  <Color>LightGrey</Color>
+                                  <Style>Solid</Style>
+                                </Border>
+                                <BackgroundColor>White</BackgroundColor>
+                                <BackgroundGradientType>None</BackgroundGradientType>
+                              </Style>
+                            </Chart>
+                          </CellContents>
+                        </TablixCell>
+                      </TablixCells>
+                    </TablixRow>
+                  </TablixRows>
+                </TablixBody>
+                <TablixColumnHierarchy>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>0.25in</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox12">
+                            <rd:DefaultName>Textbox12</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>Week Range</Value>
+                                    <Style>
+                                      <FontWeight>Bold</FontWeight>
+                                      <Color>White</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#1b75ab</BackgroundColor>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Group Name="WeekInterval">
+                            <GroupExpressions>
+                              <GroupExpression>=Fields!WeekInterval.Value</GroupExpression>
+                            </GroupExpressions>
+                          </Group>
+                          <SortExpressions>
+                            <SortExpression>
+                              <Value>=Fields!WeekInterval.Value</Value>
+                            </SortExpression>
+                          </SortExpressions>
+                          <TablixHeader>
+                            <Size>0.2732in</Size>
+                            <CellContents>
+                              <Textbox Name="WeekInterval">
+                                <rd:DefaultName>WeekInterval</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Split(Fields!WeekInterval.Value,"-")(0).Trim() &amp; vbCrLf &amp; "-" &amp; vbCrLf &amp; Split(Fields!WeekInterval.Value,"-")(1).Trim()</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>=iif(Code.GetColCounter() MOD 2=0,"#fde6b0","#bde3c3")</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                        </TablixMember>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>0.2732in</Size>
+                            <CellContents>
+                              <Textbox Name="Textbox18">
+                                <rd:DefaultName>Textbox18</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>Total</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>#ddeeff</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixColumnHierarchy>
+                <TablixRowHierarchy>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="EmployeeName">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!EmployeeName.Value</GroupExpression>
+                        </GroupExpressions>
+                        <PageName>Time by Employee -Summary Analysis</PageName>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!EmployeeName.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>1.59896in</Size>
+                        <CellContents>
+                          <Textbox Name="EmployeeName">
+                            <rd:DefaultName>EmployeeName</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!EmployeeName.Value</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                      <FontWeight>Bold</FontWeight>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#e5ffff</BackgroundColor>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixRowHierarchy>
+                <RepeatColumnHeaders>true</RepeatColumnHeaders>
+                <RepeatRowHeaders>true</RepeatRowHeaders>
+                <FixedColumnHeaders>true</FixedColumnHeaders>
+                <FixedRowHeaders>true</FixedRowHeaders>
+                <DataSetName>WeeklyTimesheetSumaaryDataSet</DataSetName>
+                <Top>0.66937in</Top>
+                <Left>0.05715cm</Left>
+                <Height>0.82244in</Height>
+                <Width>3.40625in</Width>
+                <ZIndex>2</ZIndex>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                </Style>
+              </Tablix>
+              <Textbox Name="Textbox3">
+                <rd:DefaultName>Textbox3</rd:DefaultName>
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>=Replace(
+    Join(
+        LookupSet(
+            Nothing,
+            Nothing,
+            Fields!EmployeeName.Value &amp; " took half-day leave on " &amp;
+            Format(Fields!FromDate.Value, "MM-dd-yyyy"),
+            "EmployeeHalfDayLeave"
+        ),
+        "||"
+    ),
+"||",
+"&lt;br/&gt;")</Value>
+                        <MarkupType>HTML</MarkupType>
+                        <Style />
+                      </TextRun>
+                    </TextRuns>
+                    <Style />
+                  </Paragraph>
+                </Paragraphs>
+                <Top>1.49181in</Top>
+                <Left>0in</Left>
+                <Height>0.25in</Height>
+                <Width>6.99083in</Width>
+                <ZIndex>3</ZIndex>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+              <Textbox Name="Textbox4">
+                <rd:DefaultName>Textbox4</rd:DefaultName>
+                <CanGrow>true</CanGrow>
+                <KeepTogether>true</KeepTogether>
+                <Paragraphs>
+                  <Paragraph>
+                    <TextRuns>
+                      <TextRun>
+                        <Value>=Replace(
+    Join(
+        LookupSet(
+            Nothing,
+            Nothing,
+            IIF(
+            Fields!TotalLeaves.Value = 1,
+            Fields!EmployeeName.Value &amp; " took total 1 full day leave on " &amp;
+            Format(Fields!MinDate.Value, "MM-dd-yyyy"),
+            
+            Fields!EmployeeName.Value &amp; " took total " &amp;
+            Fields!TotalLeaves.Value &amp; " full day leaves from " &amp;
+            Format(Fields!MinDate.Value, "MM-dd-yyyy") &amp;  " to " &amp;  Format(Fields!MaxDate.Value, "MM-dd-yyyy")
+            ),
+            "EmployeeFullDayLeave"
+        ),
+        "||"
+    ),
+"||",
+"&lt;br/&gt;")</Value>
+                        <MarkupType>HTML</MarkupType>
+                        <Style />
+                      </TextRun>
+                    </TextRuns>
+                    <Style />
+                  </Paragraph>
+                </Paragraphs>
+                <Top>1.74181in</Top>
+                <Left>0in</Left>
+                <Height>0.27568in</Height>
+                <Width>6.99083in</Width>
+                <ZIndex>4</ZIndex>
+                <Style>
+                  <Border>
+                    <Style>None</Style>
+                  </Border>
+                  <PaddingLeft>2pt</PaddingLeft>
+                  <PaddingRight>2pt</PaddingRight>
+                  <PaddingTop>2pt</PaddingTop>
+                  <PaddingBottom>2pt</PaddingBottom>
+                </Style>
+              </Textbox>
+            </ReportItems>
+            <Top>0in</Top>
+            <Left>0in</Left>
+            <Height>2.39446in</Height>
+            <Width>9.96292in</Width>
+            <ZIndex>1</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Rectangle>
+        </ReportItems>
+        <Height>6.47907in</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>14.70125in</Width>
+      <Page>
+        <LeftMargin>1in</LeftMargin>
+        <RightMargin>1in</RightMargin>
+        <TopMargin>1in</TopMargin>
+        <BottomMargin>1in</BottomMargin>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="FromDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=DateAdd("d",
+        1 - DatePart("w", Today(), vbMonday) - 7,
+        Today()
+)</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>From Timesheet Date</Prompt>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ToDate">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=DateAdd("d",
+        7 - DatePart("w", Today(), vbMonday) - 7,
+        Today()
+)</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>To Timesheet Date</Prompt>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Customers">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ClientDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Customer Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ClientDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+          <LabelField>CustomerName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Projects">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Project Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+          <LabelField>Project</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="TeamLead">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>TeamLeadDropDown</DataSetName>
+          <ValueField>ManagerId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Team Lead</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>TeamLeadDropDown</DataSetName>
+          <ValueField>ManagerId</ValueField>
+          <LabelField>ManagerName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Employees">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>EmployeeDropDownDS</DataSetName>
+          <ValueField>EmployeeId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Employee Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>EmployeeDropDownDS</DataSetName>
+          <ValueField>EmployeeId</ValueField>
+          <LabelField>EmployeeName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>FromDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ToDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Customers</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Projects</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>Employees</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>TeamLead</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+  <Code>Dim colCounter As Integer = 0
+
+Function ResetColCounter()
+    colCounter = 0
+    Return ""
+End Function
+
+Function GetColCounter() As Integer
+    colCounter = colCounter + 1
+    Return colCounter
+End Function
+</Code>
+</Report>

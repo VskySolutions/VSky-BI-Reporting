@@ -1,0 +1,1376 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Cm</rd:ReportUnitType>
+  <rd:ReportID>bd390e20-1122-40e9-9cd3-782eeed6a8a7</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T17:13:07.8549399Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="MELDEPLiveV32">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=Meldep_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source DataSource1:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>39e95614-0e35-4ebc-b19f-415e5008b70e</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="TimesheetDetailDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@WeekEnding">
+            <Value>=Parameters!WeekEnding.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@UserEmail">
+            <Value>=Parameters!UserEmail.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@EmployeeName">
+            <Value>=Parameters!EmployeeName.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+SELECT 
+    FORMAT(t.TimesheetDate, 'MM/dd/yyyy') AS [Date],  
+    FORMAT(DATEADD(DAY, 1, TheLastOfWeek), 'MM/dd/yyyy') AS WeekEnding,
+    DATENAME(WEEKDAY, t.TimesheetDate) AS DayName,
+    tl.ProjectId AS ProjectId,
+    p.[Name] AS Project,   
+    tl.ProjectModuleId AS ProjectModuleId,
+    pm.[Name] AS ProjectModule,
+    tl.ProjectTaskId AS TaskId,
+    pt.[Name] AS Task,
+    tl.ProjectActivityId AS ProjectActivityId,
+    pa.[Name] AS Activity,
+    tl.Description AS ActivityDetails,
+    e.Id AS EmployeeId,
+    Per.FirstName + ' ' + Per.LastName AS [Resource],
+    tl.[Hours] AS ActualHours,
+    tl.BillableHours AS BillableHours,
+    
+    pt.StartDate AS [Activity Start Date],
+    pt.EndDate AS [Activity End Date],
+    ddStatus.DropDownValue AS [Activity Status],
+    e.officialemail as Email
+
+FROM Timesheet t
+LEFT JOIN TimesheetLines tl ON (t.Id = tl.TimesheetId)
+
+LEFT JOIN Projects p ON tl.ProjectId = p.Id
+LEFT JOIN ProjectModules pm ON tl.ProjectModuleId = pm.Id
+LEFT JOIN ProjectTasks pt ON tl.ProjectTaskId = pt.Id
+LEFT JOIN ProjectActivities pa ON tl.ProjectActivityId = pa.Id
+ AND pa.ActivityStatusId IS NOT NULL --- filtering only the existing data for project activities
+LEFT JOIN [DimDate] dd ON t.TimesheetDate = dd.TheDate
+LEFT JOIN AspNetUsers anu ON tl.CreatedById = anu.Id
+LEFT JOIN Person Per ON anu.PersonId = Per.Id
+LEFT JOIN Employee e ON (e.PersonId = Per.Id AND (e.Deleted IS NULL OR e.Deleted = 0))
+
+-- New join for Activity Status
+LEFT JOIN DropDown ddStatus ON ddStatus.Id = pa.ActivityStatusId
+
+-- Existing mapping from Activity Status Report
+LEFT JOIN VW_CustomerProjectList CPL WITH (FORCESEEK) ON CPL.Id = p.Id
+
+WHERE 
+e.siteid='779c5524-d53a-47ed-960c-dd4c14e98a8e' --- Elixir UK SiteID
+   AND dd.TheLastOfWeek IN (@WeekEnding)
+    AND (t.Deleted = 0 OR t.Deleted IS NULL) 
+    AND (tl.Deleted = 0 OR tl.Deleted IS NULL)
+
+AND 
+(
+ -- EMPLOYEE: Can only see their own data, always
+        
+(
+  @UserEmail NOT IN (SELECT Email FROM (VALUES ('suvarna.bhamare@elixiruk.com') ) AS AdminTable(Email) )
+            
+AND e.officialemail = @UserEmail
+        
+)
+        
+OR
+        
+-- ADMIN: See all employees by default, OR filter by selected employee
+        
+(
+  @UserEmail IN ('suvarna.bhamare@elixiruk.com')
+  AND
+  (
+      -- No employee selected → show admin's own data
+      @EmployeeName IS NULL 
+      AND e.officialemail = @UserEmail
+
+      OR
+
+      -- Employee selected → filter
+     e.Id IN (
+    SELECT TRY_CAST(VALUE AS uniqueidentifier)
+    FROM string_split(@EmployeeName, ',')
+)
+  )
+)
+)
+
+
+
+   
+ORDER BY t.TimesheetDate ASC;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Date">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Date</DataField>
+        </Field>
+        <Field Name="WeekEnding">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>WeekEnding</DataField>
+        </Field>
+        <Field Name="DayName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>DayName</DataField>
+        </Field>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="Project">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project</DataField>
+        </Field>
+        <Field Name="ProjectModuleId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModuleId</DataField>
+        </Field>
+        <Field Name="ProjectModule">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModule</DataField>
+        </Field>
+        <Field Name="TaskId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>TaskId</DataField>
+        </Field>
+        <Field Name="Task">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Task</DataField>
+        </Field>
+        <Field Name="ProjectActivityId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectActivityId</DataField>
+        </Field>
+        <Field Name="Activity">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Activity</DataField>
+        </Field>
+        <Field Name="ActivityDetails">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActivityDetails</DataField>
+        </Field>
+        <Field Name="EmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeId</DataField>
+        </Field>
+        <Field Name="Resource">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Resource</DataField>
+        </Field>
+        <Field Name="ActualHours">
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <DataField>ActualHours</DataField>
+        </Field>
+        <Field Name="BillableHours">
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <DataField>BillableHours</DataField>
+        </Field>
+        <Field Name="Activity_Start_Date">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>Activity Start Date</DataField>
+        </Field>
+        <Field Name="Activity_End_Date">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>Activity End Date</DataField>
+        </Field>
+        <Field Name="Activity_Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Activity Status</DataField>
+        </Field>
+        <Field Name="Email">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Email</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT
+P.Id AS ProjectId,
+P.[Name] AS Project
+FROM Projects P
+WHERE 
+P.Deleted!=1 
+AND P.Active=1
+ORDER BY Project</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="Project">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ModuleDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>--SELECT 
+--'' AS ProjectModuleId,
+--'NA' AS ProjectModule 
+--UNION
+
+SELECT
+PM.Id AS ProjectModuleId,
+PM.[Name] AS ProjectModule
+FROM ProjectModules PM
+WHERE 
+PM.Deleted!=1 
+--AND PM.ProjectId IN (@Projects)
+ORDER BY ProjectModule</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectModuleId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModuleId</DataField>
+        </Field>
+        <Field Name="ProjectModule">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModule</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="TaskDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>--SELECT
+--'' AS TaskId,
+--'NA' AS Task
+--UNION
+
+SELECT
+PT.Id AS TaskId,
+PT.[Name] AS Task
+FROM ProjectTasks PT
+WHERE 
+PT.Deleted!=1 
+--AND PT.ProjectModuleId IN (@ProjectModules)
+ORDER BY Task</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="TaskId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>TaskId</DataField>
+        </Field>
+        <Field Name="Task">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Task</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="EmployeeDropDownDS">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>WITH EmployeeDetails AS (
+SELECT 
+        E.Id AS EmployeeId,
+		P.FirstName+' '+P.LastName AS EmployeeName,
+		ES.EmployeeStatusId AS StatusId,
+		DD.DropDownValue AS Status,
+       ROW_NUMBER()OVER (PARTITION BY E.Id ORDER BY ES .StartDate DESC) AS Row_Num
+    FROM Employee E
+	INNER JOIN Person P ON P.Id=E.PersonId AND P.Deleted!=1
+	LEFT JOIN EmployeeStatus ES ON ES.EmployeeId=E.Id
+	LEFT JOIN DropDown DD ON DD.ID=ES.EmployeeStatusId
+    WHERE 
+		ES.Deleted != 1 AND E.Deleted!=1
+)
+SELECT 
+ED.EmployeeId,
+ED.EmployeeName
+FROM EmployeeDetails ED
+WHERE Row_Num=1 AND ED.Status='Current'
+ORDER BY EmployeeName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="EmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeId</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CustomerData">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>WITH ProjectDetailsList AS (
+    SELECT DISTINCT
+        CASE 
+            WHEN P.Active = 1 THEN 1
+            ELSE 0
+        END AS StatusId,
+        CASE 
+            WHEN P.Active = 1 THEN 'Active'
+            ELSE 'Inactive'
+        END AS Status,
+        CPL.CustomerId,
+        C.CustomerName
+    FROM Projects P
+    JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
+    JOIN VW_CustomerList C ON C.Id = CPL.CustomerId
+    WHERE P.Deleted != 1
+)
+SELECT Distinct
+    PD.CustomerId, 
+    PD.CustomerName
+FROM ProjectDetailsList PD
+--WHERE PD.StatusId IN (@Status)
+ORDER BY PD.CustomerName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectActiveStatus">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT DISTINCT
+                CASE 
+		WHEN P.Active=1 THEN 1
+		WHEN P.Active=0 THEN 0
+	END AS StatusId,
+	CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status
+FROM Projects P
+WHERE
+	P.Deleted!=1 
+ORDER BY Status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectStatusData">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>select distinct pr.ProjectStatusId as 'ProjectId', 
+       dd.dropdownvalue as 'Project Status'
+from Projects pr
+inner join dropdown dd
+      on pr.ProjectStatusId = dd.id
+order by dd.dropdownvalue</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="Project_Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ActivityNameData">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT DISTINCT
+    pa.Name AS ActivityName
+FROM ProjectActivities pa
+INNER JOIN Projects p ON p.Id = pa.ProjectId
+INNER JOIN VW_CustomerProjectList CPL ON CPL.Id = p.Id
+WHERE  
+    pa.ActivityStatusId IS NOT NULL
+    AND p.Deleted != 1
+   -- AND (CASE WHEN p.Active = 1 THEN 1 ELSE 0 END) IN (@Status)
+    --AND CPL.CustomerId IN (@Customer)
+ORDER BY pa.Name</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ActivityName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActivityName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ActivityStatus">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT '' AS ActivityStatusId, 'NA' AS ActivityStatusName
+UNION
+SELECT 
+    id AS ActivityStatusId, 
+    DropDownValue AS ActivityStatusName
+FROM Dropdown
+WHERE Id IN (SELECT DISTINCT activitystatusid FROM ProjectActivities)
+ORDER BY ActivityStatusName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ActivityStatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActivityStatusId</DataField>
+        </Field>
+        <Field Name="ActivityStatusName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ActivityStatusName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectPriorityData">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT 
+	DD.Id AS ProjectPriorityId,
+	DD.DropDownValue AS ProjectPriority
+FROM DropDown DD
+LEFT JOIN DropDownType DDT ON DD.DropDownTypeId=DDT.Id
+WHERE DDT.Type='Project Priorities'
+AND DDT.Deleted!=1
+ORDER BY DD.DropDownValue</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectPriorityId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectPriorityId</DataField>
+        </Field>
+        <Field Name="ProjectPriority">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectPriority</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="WeekEnd">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Year">
+            <Value>=Parameters!Year.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Month">
+            <Value>=Parameters!Month.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT DISTINCT 
+    dd.TheLastOfWeek AS WeekEnding,  -- actual value (DATE)
+   FORMAT(DATEADD(DAY, 1, TheLastOfWeek), 'MM/dd/yyyy') AS WeekEndingLabel
+FROM DimDate dd
+WHERE 
+    YEAR(dd.TheLastOfWeek) = @Year
+    AND MONTH(dd.TheLastOfWeek) = @Month
+ORDER BY dd.TheLastOfWeek DESC;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="WeekEnding">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>WeekEnding</DataField>
+        </Field>
+        <Field Name="WeekEndingLabel">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>WeekEndingLabel</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="Year">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <CommandText>SELECT DISTINCT YEAR(TheDate) AS Year
+FROM DimDate
+WHERE YEAR(TheDate) IN (YEAR(GETDATE()), YEAR(GETDATE()) - 1)
+ORDER BY Year DESC;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="Year">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>Year</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="Month">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <CommandText>SELECT DISTINCT 
+    MONTH(TheDate) AS MonthNumber,
+    DATENAME(MONTH, TheDate) AS MonthName
+FROM DimDate
+ORDER BY MonthNumber;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="MonthNumber">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>MonthNumber</DataField>
+        </Field>
+        <Field Name="MonthName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>MonthName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="Employee_Parameter">
+      <Query>
+        <DataSourceName>MELDEPLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@UserEmail">
+            <Value>=Parameters!UserEmail.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT DISTINCT
+    E.Id AS EmployeeId,
+    P.FirstName + ' ' + P.LastName AS EmployeeName
+FROM Employee E
+JOIN Person P ON P.Id = E.PersonId AND P.Deleted != 1
+  
+
+WHERE 
+    E.Deleted != 1
+    AND E.Active = 1
+ AND e.siteid='779c5524-d53a-47ed-960c-dd4c14e98a8e' --Elixir UK SitedID
+AND
+    (
+     
+-- Admin → see all employees
+        
+@UserEmail IN (
+ SELECT Email
+            
+FROM (
+                
+VALUES 
+  ('suvarna.bhamare@elixiruk.com')     ) AS AdminTable(Email)
+   
+ )
+
+       
+ -- Employee → see only themselves
+       
+ OR E.officialEmail = @UserEmail
+    )
+       </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="EmployeeId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeId</DataField>
+        </Field>
+        <Field Name="EmployeeName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>EmployeeName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="Textbox33">
+            <rd:DefaultName>Textbox33</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Note: </Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>The Timesheet Detail Report provides a detailed view of work logged on various projects. It includes the project name, date, module, task, and specific project activities along with their details. The report also shows who created the entry and the actual hours spent. This helps track time and activity Status across different tasks and modules.</Value>
+                    <Style>
+                      <FontStyle>Italic</FontStyle>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Left>0.254cm</Left>
+            <Height>2.01648cm</Height>
+            <Width>38.84083cm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Tablix Name="Tablix2">
+            <TablixCorner>
+              <TablixCornerRows>
+                <TablixCornerRow>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox16">
+                        <rd:DefaultName>Textbox16</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Project Name</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>SteelBlue</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                  <TablixCornerCell>
+                    <CellContents>
+                      <Textbox Name="Textbox18">
+                        <rd:DefaultName>Textbox18</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Project Tasks</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>SteelBlue</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixCornerCell>
+                </TablixCornerRow>
+              </TablixCornerRows>
+            </TablixCorner>
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>2.82575cm</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>2.5cm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>0.98954cm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="ActualHours">
+                          <rd:DefaultName>ActualHours</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Sum(Fields!ActualHours.Value)</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox15">
+                          <rd:DefaultName>Textbox15</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Sum(Fields!ActualHours.Value)</Value>
+                                  <Style>
+                                    <FontWeight>Bold</FontWeight>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Gold</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>0.6cm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox24">
+                          <rd:DefaultName>Textbox24</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Sum(Fields!ActualHours.Value)</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Orange</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox17">
+                          <rd:DefaultName>Textbox17</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Sum(Fields!ActualHours.Value)</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>Orange</BackgroundColor>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="Date">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Date.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!Date.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>0.9175cm</Size>
+                    <CellContents>
+                      <Textbox Name="DayName">
+                        <rd:DefaultName>DayName</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!DayName.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>SteelBlue</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember />
+                  </TablixMembers>
+                </TablixMember>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>0.9175cm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox14">
+                        <rd:DefaultName>Textbox14</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Total Hours Per Week</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Orange</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                </TablixMember>
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <Group Name="Project">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Project.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!Project.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>10.92729cm</Size>
+                    <CellContents>
+                      <Textbox Name="Project1">
+                        <rd:DefaultName>Project1</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!Project.Value</Value>
+                                <Style />
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="Task">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!Task.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!Task.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>4.66958cm</Size>
+                        <CellContents>
+                          <Textbox Name="Task">
+                            <rd:DefaultName>Task</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!Task.Value</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember />
+                      </TablixMembers>
+                      <Visibility>
+                        <Hidden>true</Hidden>
+                        <ToggleItem>Project1</ToggleItem>
+                      </Visibility>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>10.92729cm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox21">
+                        <rd:DefaultName>Textbox21</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Total Hours per Day</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>Orange</BackgroundColor>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>4.66958cm</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox23">
+                            <rd:DefaultName>Textbox23</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value />
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>Orange</BackgroundColor>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                    </TablixMember>
+                  </TablixMembers>
+                  <KeepWithGroup>Before</KeepWithGroup>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>TimesheetDetailDS</DataSetName>
+            <Top>2.19287cm</Top>
+            <Left>0.254cm</Left>
+            <Height>2.50704cm</Height>
+            <Width>20.92262cm</Width>
+            <ZIndex>1</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>141.90486mm</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>458.54404mm</Width>
+      <Page>
+        <PageHeader>
+          <Height>10.51278mm</Height>
+          <PrintOnFirstPage>true</PrintOnFirstPage>
+          <PrintOnLastPage>true</PrintOnLastPage>
+          <ReportItems>
+            <Textbox Name="ReportTitle">
+              <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+              <rd:DefaultName>ReportTitle</rd:DefaultName>
+              <CanGrow>true</CanGrow>
+              <KeepTogether>true</KeepTogether>
+              <Paragraphs>
+                <Paragraph>
+                  <TextRuns>
+                    <TextRun>
+                      <Value>Timesheet Detail Report </Value>
+                      <Style>
+                        <FontFamily>Times New Roman</FontFamily>
+                        <FontSize>16pt</FontSize>
+                        <FontWeight>Bold</FontWeight>
+                      </Style>
+                    </TextRun>
+                  </TextRuns>
+                  <Style />
+                </Paragraph>
+              </Paragraphs>
+              <Top>0mm</Top>
+              <Left>0.254cm</Left>
+              <Height>8.255mm</Height>
+              <Width>65.88125mm</Width>
+              <Style>
+                <Border>
+                  <Style>None</Style>
+                </Border>
+                <PaddingLeft>2pt</PaddingLeft>
+                <PaddingRight>2pt</PaddingRight>
+                <PaddingTop>2pt</PaddingTop>
+                <PaddingBottom>2pt</PaddingBottom>
+              </Style>
+            </Textbox>
+          </ReportItems>
+          <Style>
+            <Border>
+              <Style>None</Style>
+            </Border>
+          </Style>
+        </PageHeader>
+        <PageHeight>8in</PageHeight>
+        <PageWidth>17in</PageWidth>
+        <LeftMargin>0.5in</LeftMargin>
+        <RightMargin>0.5in</RightMargin>
+        <TopMargin>0.5in</TopMargin>
+        <BottomMargin>0.5in</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="Year">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>Year</DataSetName>
+          <ValueField>Year</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Year</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>Year</DataSetName>
+          <ValueField>Year</ValueField>
+          <LabelField>Year</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Month">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>Month</DataSetName>
+          <ValueField>MonthName</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Month</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>Month</DataSetName>
+          <ValueField>MonthNumber</ValueField>
+          <LabelField>MonthName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="WeekEnding">
+      <DataType>DateTime</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>WeekEnd</DataSetName>
+          <ValueField>WeekEnding</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Week Ending</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>WeekEnd</DataSetName>
+          <ValueField>WeekEnding</ValueField>
+          <LabelField>WeekEndingLabel</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="UserEmail">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>=User!UserID</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>User Email</Prompt>
+      <Hidden>true</Hidden>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="EmployeeName">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>Employee_Parameter</DataSetName>
+          <ValueField>EmployeeId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Employee Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>Employee_Parameter</DataSetName>
+          <ValueField>EmployeeId</ValueField>
+          <LabelField>EmployeeName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>5</NumberOfColumns>
+      <NumberOfRows>4</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Year</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Month</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>WeekEnding</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>3</RowIndex>
+          <ParameterName>UserEmail</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>3</RowIndex>
+          <ParameterName>EmployeeName</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+</Report>

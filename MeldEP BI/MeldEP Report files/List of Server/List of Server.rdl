@@ -1,0 +1,828 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Mm</rd:ReportUnitType>
+  <rd:ReportID>48d7445e-d5c1-4470-8fe3-62f1a68aa594</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T16:56:42.7040840Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="Meldep_Live_V3_2">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=MeldEp_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source DataSource1:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>7b4627f8-d098-41e0-a810-094f4fe539f6</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="LIST_OF_SERVER_MAIN_DS">
+      <Query>
+        <DataSourceName>Meldep_Live_V3_2</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ProviderName">
+            <Value>=Parameters!ProviderName.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ContractId">
+            <Value>=Parameters!ContractId.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@CustomerId">
+            <Value>=Parameters!CustomerId.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT
+	srv.ProviderId,
+    dd.DropDownValue AS Provider,
+    srv.CustomerId, 
+    srv.ContractId, 
+    srv.Username,
+    srv.Password,
+    [dbo].[ProcessHTMLDescription](srv.Instructions) AS Instructions,
+	[dbo].[ProcessHTMLDescription](srv.Notes) AS ServerNotes,
+	srv.FtpUsername,
+    srv.FtpPassword,
+    srv.FtpPort,
+    srv.FtpHostname,
+    srv.StartDate,  
+    srv.CardDigit,
+    sp.RenewDate,
+    sp.Amount,
+    sp.Notes AS PaymentNotes
+FROM dbo.Server srv
+JOIN dbo.Sites s ON srv.SiteId = s.Id
+LEFT JOIN dbo.DropDown dd ON srv.ProviderId = dd.Id
+LEFT JOIN dbo.ServerPayments sp ON srv.Id = sp.ServerId
+WHERE 
+    srv.Deleted = 0 
+    AND s.Deleted = 0
+    AND (dd.Deleted = 0 OR dd.Deleted IS NULL)
+	AND (srv.ProviderId IN (@ProviderName))
+	AND (srv.CustomerId IN (@CustomerId))
+	AND (srv.ContractId IN (@ContractId));</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProviderId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProviderId</DataField>
+        </Field>
+        <Field Name="Provider">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Provider</DataField>
+        </Field>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="ContractId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ContractId</DataField>
+        </Field>
+        <Field Name="Username">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Username</DataField>
+        </Field>
+        <Field Name="Password">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Password</DataField>
+        </Field>
+        <Field Name="Instructions">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Instructions</DataField>
+        </Field>
+        <Field Name="ServerNotes">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ServerNotes</DataField>
+        </Field>
+        <Field Name="FtpUsername">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>FtpUsername</DataField>
+        </Field>
+        <Field Name="FtpPassword">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>FtpPassword</DataField>
+        </Field>
+        <Field Name="FtpPort">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>FtpPort</DataField>
+        </Field>
+        <Field Name="FtpHostname">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>FtpHostname</DataField>
+        </Field>
+        <Field Name="StartDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>StartDate</DataField>
+        </Field>
+        <Field Name="CardDigit">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CardDigit</DataField>
+        </Field>
+        <Field Name="RenewDate">
+          <rd:TypeName>System.DateTime</rd:TypeName>
+          <DataField>RenewDate</DataField>
+        </Field>
+        <Field Name="Amount">
+          <rd:TypeName>System.Decimal</rd:TypeName>
+          <DataField>Amount</DataField>
+        </Field>
+        <Field Name="PaymentNotes">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>PaymentNotes</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="PROVIDER_NAME_DROPDOWN_DS">
+      <Query>
+        <DataSourceName>Meldep_Live_V3_2</DataSourceName>
+        <CommandText>SELECT 
+    d.Id AS ProviderId,
+    d.DropDownValue AS ProviderName
+FROM dbo.DropDown d
+LEFT JOIN dbo.DropDownType dt ON d.DropDownTypeId = dt.Id
+WHERE dt.Type = 'Server Provider'
+  AND d.Deleted = 0
+  AND dt.Deleted = 0
+  Order by DropDownValue ASC</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProviderId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProviderId</DataField>
+        </Field>
+        <Field Name="ProviderName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProviderName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CUSTOMERID_DROPDOWN_DS">
+      <Query>
+        <DataSourceName>Meldep_Live_V3_2</DataSourceName>
+        <CommandText>SELECT DISTINCT
+	CustomerID
+FROM SERVER
+WHERE DELETED != 1
+ORDER BY CustomerID ASC;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CUSTOMERID">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerID</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CONTRACTID_DROPDOWN_DS">
+      <Query>
+        <DataSourceName>Meldep_Live_V3_2</DataSourceName>
+        <CommandText>SELECT DISTINCT
+	ContractID
+FROM SERVER
+WHERE DELETED != 1
+ORDER BY ContractID;</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CONTRACTID">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ContractID</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="Textbox33">
+            <rd:DefaultName>Textbox33</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>List of Server</Value>
+                    <Style>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>16pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>0mm</Top>
+            <Left>0mm</Left>
+            <Height>7.39599mm</Height>
+            <Width>36.24791mm</Width>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Tablix Name="Tablix2">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>40.34583mm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>8.20208mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox1">
+                          <rd:DefaultName>Textbox1</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Renew Date</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>8.46666mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="RenewDate1">
+                          <rd:DefaultName>RenewDate1</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!RenewDate.Value</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <Format>d</Format>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>46.16667mm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox45">
+                        <rd:DefaultName>Textbox45</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Provider</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>41.40417mm</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox42">
+                            <rd:DefaultName>Textbox42</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>Customer Id</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                      <FontWeight>Bold</FontWeight>
+                                      <Color>White</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#1b75ab</BackgroundColor>
+                              <VerticalAlign>Middle</VerticalAlign>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>41.88937mm</Size>
+                            <CellContents>
+                              <Textbox Name="Textbox40">
+                                <rd:DefaultName>Textbox40</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>Contract Id</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                          <Color>White</Color>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>#1b75ab</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>33.73125mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox34">
+                                    <rd:DefaultName>Textbox34</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Start Date</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                              <Color>White</Color>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#1b75ab</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember />
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                  <FixedData>true</FixedData>
+                  <KeepWithGroup>After</KeepWithGroup>
+                  <RepeatOnNewPage>true</RepeatOnNewPage>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="Provider">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!Provider.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!Provider.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>46.16667mm</Size>
+                    <CellContents>
+                      <Textbox Name="Provider1">
+                        <rd:DefaultName>Provider1</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!Provider.Value</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="CustomerId">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!CustomerId.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!CustomerId.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>41.40417mm</Size>
+                        <CellContents>
+                          <Textbox Name="CustomerId">
+                            <rd:DefaultName>CustomerId</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!CustomerId.Value</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Group Name="ContractId">
+                            <GroupExpressions>
+                              <GroupExpression>=Fields!ContractId.Value</GroupExpression>
+                            </GroupExpressions>
+                          </Group>
+                          <SortExpressions>
+                            <SortExpression>
+                              <Value>=Fields!ContractId.Value</Value>
+                            </SortExpression>
+                          </SortExpressions>
+                          <TablixHeader>
+                            <Size>41.88937mm</Size>
+                            <CellContents>
+                              <Textbox Name="ContractId">
+                                <rd:DefaultName>ContractId</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!ContractId.Value</Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style />
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <Group Name="StartDate">
+                                <GroupExpressions>
+                                  <GroupExpression>=Fields!StartDate.Value</GroupExpression>
+                                </GroupExpressions>
+                              </Group>
+                              <SortExpressions>
+                                <SortExpression>
+                                  <Value>=Fields!StartDate.Value</Value>
+                                </SortExpression>
+                              </SortExpressions>
+                              <TablixHeader>
+                                <Size>33.73125mm</Size>
+                                <CellContents>
+                                  <Textbox Name="StartDate">
+                                    <rd:DefaultName>StartDate</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>=Fields!StartDate.Value</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <Format>d</Format>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style />
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember>
+                                  <Group Name="Details1" />
+                                </TablixMember>
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>LIST_OF_SERVER_MAIN_DS</DataSetName>
+            <Top>8.45432mm</Top>
+            <Left>0.49742mm</Left>
+            <Height>16.66874mm</Height>
+            <Width>203.53729mm</Width>
+            <ZIndex>1</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+        </ReportItems>
+        <Height>26.97516mm</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>208.71658mm</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="ProviderName">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>PROVIDER_NAME_DROPDOWN_DS</DataSetName>
+          <ValueField>ProviderId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Provider Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>PROVIDER_NAME_DROPDOWN_DS</DataSetName>
+          <ValueField>ProviderId</ValueField>
+          <LabelField>ProviderName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="CustomerId">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CUSTOMERID_DROPDOWN_DS</DataSetName>
+          <ValueField>CUSTOMERID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Customer Id</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CUSTOMERID_DROPDOWN_DS</DataSetName>
+          <ValueField>CUSTOMERID</ValueField>
+          <LabelField>CUSTOMERID</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ContractId">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CONTRACTID_DROPDOWN_DS</DataSetName>
+          <ValueField>CONTRACTID</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Contract Id</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CONTRACTID_DROPDOWN_DS</DataSetName>
+          <ValueField>CONTRACTID</ValueField>
+          <LabelField>CONTRACTID</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>4</NumberOfColumns>
+      <NumberOfRows>2</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>CustomerId</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ContractId</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ProviderName</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+</Report>

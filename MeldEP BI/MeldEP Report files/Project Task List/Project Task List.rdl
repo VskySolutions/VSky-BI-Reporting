@@ -1,0 +1,1274 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Report MustUnderstand="df" xmlns="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition" xmlns:rd="http://schemas.microsoft.com/SQLServer/reporting/reportdesigner" xmlns:cl="http://schemas.microsoft.com/sqlserver/reporting/2010/01/componentdefinition" xmlns:df="http://schemas.microsoft.com/sqlserver/reporting/2016/01/reportdefinition/defaultfontfamily" xmlns:am="http://schemas.microsoft.com/sqlserver/reporting/authoringmetadata">
+  <rd:ReportUnitType>Mm</rd:ReportUnitType>
+  <rd:ReportID>0df87df1-6c85-459c-a2b5-cf2bae66b936</rd:ReportID>
+  <am:AuthoringMetadata>
+    <am:CreatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:CreatedBy>
+    <am:UpdatedBy>
+      <am:Name>PBIRB</am:Name>
+      <am:Version>15.7.1813.16</am:Version>
+    </am:UpdatedBy>
+    <am:LastModifiedTimestamp>2026-06-11T17:11:45.9865729Z</am:LastModifiedTimestamp>
+  </am:AuthoringMetadata>
+  <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
+  <AutoRefresh>0</AutoRefresh>
+  <DataSources>
+    <DataSource Name="MeldepLiveV32">
+      <rd:SecurityType>DataBase</rd:SecurityType>
+      <ConnectionProperties>
+        <DataProvider>SQL</DataProvider>
+        <ConnectString>Data Source=67.211.217.118;Initial Catalog=MeldEp_Live_v3-2</ConnectString>
+        <Prompt>Specify a user name and password for data source MeldepDevV32:</Prompt>
+      </ConnectionProperties>
+      <rd:DataSourceID>c0219d1b-384e-4f06-b2aa-bd0e20869c01</rd:DataSourceID>
+    </DataSource>
+  </DataSources>
+  <DataSets>
+    <DataSet Name="ProjectTaskListDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Customer">
+            <Value>=Parameters!Customer.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectStatus">
+            <Value>=Parameters!ProjectStatus.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectModules">
+            <Value>=Parameters!ProjectModules.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectTasks">
+            <Value>=Parameters!ProjectTasks.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH EmployeeTaskEstimates AS (
+    SELECT 
+        PT.Id AS TaskId,
+        P.FirstName + ' ' + P.LastName AS EmployeeName,
+        SUM(PA.EstimateHours) AS TotalHours
+    FROM 
+        ProjectTasks PT
+    LEFT JOIN 
+        ProjectActivities PA ON PA.TaskId = PT.Id AND PA.ProjectId=PT.ProjectId AND PA.ProjectModuleId=PT.ProjectModuleId AND PA.Deleted != 1
+    LEFT JOIN 
+        Employee E ON E.Id = PA.AssignedToId AND E.Deleted != 1 
+	LEFT JOIN EmployeeStatus ES ON ES.EmployeeId=E.Id AND ES.Deleted!=1
+    LEFT JOIN 
+        Person P ON P.Id = E.PersonId AND P.Deleted != 1
+    WHERE 
+        PT.Deleted != 1
+    GROUP BY 
+        PT.Id, P.FirstName, P.LastName
+),
+WorkedEmployees AS (
+    SELECT 
+        PT.Id AS TaskId,
+        P.FirstName + ' ' + P.LastName AS EmployeeName,
+        SUM(TL.Hours) AS TotalHours
+    FROM 
+        ProjectTasks PT
+    LEFT JOIN 
+        TimesheetLines TL ON TL.ProjectTaskId = PT.Id AND TL.ProjectId=PT.ProjectId AND TL.ProjectModuleId=PT.ProjectModuleId AND TL.Deleted != 1
+    LEFT JOIN 
+        Timesheet T ON T.Id = TL.TimesheetId AND T.Deleted != 1
+    LEFT JOIN 
+        AspNetUsers A ON A.Id = T.CreatedById AND A.Deleted != 1
+    LEFT JOIN 
+        Person P ON P.Id = A.PersonId AND P.Deleted != 1
+    WHERE 
+        PT.Deleted != 1
+    GROUP BY 
+        PT.Id, P.FirstName, P.LastName
+)
+
+SELECT 
+	P.Id AS ProjectId,
+	P.Name AS ProjectName,
+	PM.Id as ProjectModuleId,
+	ISNULL(PM.Name,'NA') AS ProjectModuleName,
+	PT.Id AS ProjectTaskId,
+	ISNULL(PT.Name,'NA') AS ProjectTaskName,
+	P.CustomerId AS CustomerId,
+    ISNULL(C.Name, 'NA') AS CustomerName,
+    P.ProjectStatusId AS ProjectStatusId,
+    SDD.DropDownValue AS ProjectStatus,
+    CASE 
+        WHEN P.Active = 1 THEN 1
+        WHEN P.Active = 0 THEN 0
+    END AS StatusId,
+    CASE 
+        WHEN P.Active = 1 THEN 'Active'
+        WHEN P.Active = 0 THEN 'Inactive'
+    END AS Status,
+	ISNULL(ETE.AssignedTo, 'NA') AS AssignedTo,
+	ISNULL(WK.WorkedBy, 'NA') AS WorkedBy
+FROM Projects P
+LEFT JOIN ProjectModules PM ON PM.ProjectId=P.Id AND PM.Deleted!=1
+LEFT JOIN ProjectTasks PT ON PT.ProjectId=P.Id AND PM.Id=PT.ProjectModuleId AND PT.Deleted!=1
+LEFT JOIN CompanyCustomers CC ON CC.Id = P.CustomerId
+LEFT JOIN Company C ON C.Id = CC.CompanyId
+LEFT JOIN DropDown SDD ON SDD.Id = P.ProjectStatusId
+LEFT JOIN (
+    SELECT 
+        TaskId,
+        STRING_AGG(EmployeeName + ' (' + CAST(TotalHours AS NVARCHAR(10)) + ')', ', ') AS AssignedTo
+    FROM 
+        EmployeeTaskEstimates
+    GROUP BY 
+        TaskId
+) ETE ON ETE.TaskId = PT.Id
+LEFT JOIN (
+    SELECT 
+        TaskId,
+        STRING_AGG(EmployeeName + ' (' + CAST(TotalHours AS NVARCHAR(10)) + ')', ', ') AS WorkedBy
+    FROM 
+        WorkedEmployees
+    GROUP BY TaskId
+) WK ON WK.TaskId = PT.Id
+WHERE P.Deleted!=1 
+AND (ISNULL(P.CustomerId, 'NULL') IN (@Customer)) 
+AND P.ProjectStatusId IN (@ProjectStatus)
+AND ISNULL(P.Id,'NULL') IN (@Projects)
+AND (ISNULL(PM.Id,'NULL') IN (@ProjectModules)) 
+AND (ISNULL(PT.Id,'NULL') IN (@ProjectTasks)) </CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="ProjectName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectName</DataField>
+        </Field>
+        <Field Name="ProjectModuleId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModuleId</DataField>
+        </Field>
+        <Field Name="ProjectModuleName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectModuleName</DataField>
+        </Field>
+        <Field Name="ProjectTaskId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectTaskId</DataField>
+        </Field>
+        <Field Name="ProjectTaskName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectTaskName</DataField>
+        </Field>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+        <Field Name="ProjectStatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatusId</DataField>
+        </Field>
+        <Field Name="ProjectStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatus</DataField>
+        </Field>
+        <Field Name="StatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+        <Field Name="AssignedTo">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>AssignedTo</DataField>
+        </Field>
+        <Field Name="WorkedBy">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>WorkedBy</DataField>
+        </Field>
+      </Fields>
+      <Filters>
+        <Filter>
+          <FilterExpression>=Fields!StatusId.Value</FilterExpression>
+          <Operator>In</Operator>
+          <FilterValues>
+            <FilterValue>=Parameters!Status.Value()</FilterValue>
+          </FilterValues>
+        </Filter>
+      </Filters>
+    </DataSet>
+    <DataSet Name="StatusDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <CommandText>SELECT DISTINCT
+                CASE 
+		WHEN P.Active=1 THEN 1
+		WHEN P.Active=0 THEN 0
+	END AS StatusId,
+	CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status
+FROM Projects P
+WHERE
+	P.Deleted!=1 
+ORDER BY Status</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="StatusId">
+          <rd:TypeName>System.Int32</rd:TypeName>
+          <DataField>StatusId</DataField>
+        </Field>
+        <Field Name="Status">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Status</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="CustomerDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Status">
+            <Value>=Parameters!Status.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH CustomerDetails AS (
+SELECT
+	ISNULL(P.CustomerId,'NULL') AS CustomerId,
+	ISNULL(C.[Name],'NA') AS CustomerName,
+                CASE 
+		WHEN P.Active=1 THEN 1
+		WHEN P.Active=0 THEN 0
+	END AS StatusId,
+	CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status
+
+FROM Projects P 
+LEFT JOIN CompanyCustomers CC ON CC.Id=P.CustomerId
+LEFT JOIN Company C ON C.Id=CC.CompanyId
+WHERE
+	P.Deleted!=1 
+)
+
+SELECT DISTINCT
+
+CD.CustomerId,
+CD.CustomerName
+FROM CustomerDetails CD
+WHERE CD.StatusId IN (@Status)
+ORDER BY CustomerName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="CustomerId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerId</DataField>
+        </Field>
+        <Field Name="CustomerName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>CustomerName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectStatusDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>SELECT 
+	DD.Id AS ProjectStatusId,
+	DD.DropDownValue AS ProjectStatus
+FROM DropDown DD
+LEFT JOIN DropDownType DDT ON DD.DropDownTypeId=DDT.Id
+WHERE DDT.Type='Project Status'
+AND DDT.Deleted!=1
+ORDER BY DD.DropDownValue</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectStatusId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatusId</DataField>
+        </Field>
+        <Field Name="ProjectStatus">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectStatus</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Status">
+            <Value>=Parameters!Status.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@Customer">
+            <Value>=Parameters!Customer.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ProjectStatus">
+            <Value>=Parameters!ProjectStatus.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <rd:UseGenericDesigner>true</rd:UseGenericDesigner>
+        <CommandText>WITH ProjectDetailsList AS(
+SELECT DISTINCT
+	P.Id AS ProjectId,
+	P.[Name] AS ProjectName,
+                P.CustomerId AS CustomerId,
+	CASE 
+			WHEN P.Active=1 THEN 1
+			WHEN P.Active=0 THEN 0
+	END AS StatusId,
+		CASE 
+		WHEN P.Active=1 THEN 'Active'
+		WHEN P.Active=0 THEN 'Inactive'
+	END AS Status,P.ProjectStatusId AS ProjectStatusId,
+	SDD.DropDownValue AS ProjectStatus
+
+FROM Projects P 
+LEFT JOIN CompanyCustomers CC ON CC.Id=P.CustomerId
+LEFT JOIN DropDown SDD ON SDD.Id=P.ProjectStatusId
+WHERE
+	P.Deleted!=1 
+)
+SELECT '' AS ProjectId, 'NA' AS ProjectName UNION
+SELECT
+	PD.ProjectId,
+	PD.ProjectName
+FROM ProjectDetailsList PD
+WHERE 
+          PD.StatusId IN (@Status)
+          AND ISNULL(PD.CustomerId,'NULL') IN (@Customer)
+          AND PD.ProjectStatusId IN (@ProjectStatus)
+ORDER BY ProjectName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="ProjectName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectModuleDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@Projects">
+            <Value>=Parameters!Projects.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT '' AS ProjectId,'NA' AS Project,
+'' AS ModuleId,
+'NA' AS ModuleName UNION
+SELECT DISTINCT
+P.Id AS ProjectId,
+P.Name AS Project,
+ISNULL(PM.Id,'NULL') AS ModuleId,
+ISNULL(PM.Name,'NA') AS ModuleName
+FROM Projects P
+LEFT JOIN ProjectModules PM ON PM.ProjectId=P.Id AND PM.Deleted!=1
+WHERE P.Deleted!=1
+AND ISNULL(P.Id,'NULL') IN (@Projects)
+ORDER BY ModuleName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ProjectId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ProjectId</DataField>
+        </Field>
+        <Field Name="ModuleId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ModuleId</DataField>
+        </Field>
+        <Field Name="Project">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>Project</DataField>
+        </Field>
+        <Field Name="ModuleName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ModuleName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+    <DataSet Name="ProjectTaskDropDownDS">
+      <Query>
+        <DataSourceName>MeldepLiveV32</DataSourceName>
+        <QueryParameters>
+          <QueryParameter Name="@ProjectModules">
+            <Value>=Parameters!ProjectModules.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT
+'' AS ModuleId,
+'NA' AS ModuleName,
+'' AS TaskId,
+'NA' AS TaskName UNION
+SELECT DISTINCT
+ISNULL(PM.Id,'NULL') AS ModuleId,
+ISNULL(PM.Name,'NA') AS ModuleName,
+ISNULL(PT.Id,'NULL') AS TaskId,
+ISNULL(PT.Name,'NA') AS TaskName
+FROM Projects P
+LEFT JOIN ProjectModules PM ON PM.ProjectId=P.Id AND PM.Deleted!=1
+LEFT JOIN ProjectTasks PT ON PT.ProjectId=P.Id AND PM.Id=PT.ProjectModuleId AND PT.Deleted!=1
+WHERE P.Deleted!=1
+AND ISNULL(PM.Id,'NULL') IN (@ProjectModules)
+ORDER BY TaskName</CommandText>
+      </Query>
+      <Fields>
+        <Field Name="ModuleId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ModuleId</DataField>
+        </Field>
+        <Field Name="TaskId">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>TaskId</DataField>
+        </Field>
+        <Field Name="ModuleName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>ModuleName</DataField>
+        </Field>
+        <Field Name="TaskName">
+          <rd:TypeName>System.String</rd:TypeName>
+          <DataField>TaskName</DataField>
+        </Field>
+      </Fields>
+    </DataSet>
+  </DataSets>
+  <ReportSections>
+    <ReportSection>
+      <Body>
+        <ReportItems>
+          <Textbox Name="ReportTitle2">
+            <rd:WatermarkTextbox>Title</rd:WatermarkTextbox>
+            <rd:DefaultName>ReportTitle</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value>Project Task List</Value>
+                    <Style>
+                      <FontFamily>Times New Roman</FontFamily>
+                      <FontSize>16pt</FontSize>
+                      <FontWeight>Bold</FontWeight>
+                    </Style>
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>0mm</Top>
+            <Left>0.40217cm</Left>
+            <Height>8.255mm</Height>
+            <Width>144.3567mm</Width>
+            <RepeatWith>Main</RepeatWith>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+          <Tablix Name="Main">
+            <TablixBody>
+              <TablixColumns>
+                <TablixColumn>
+                  <Width>94.12108mm</Width>
+                </TablixColumn>
+                <TablixColumn>
+                  <Width>62.88839mm</Width>
+                </TablixColumn>
+              </TablixColumns>
+              <TablixRows>
+                <TablixRow>
+                  <Height>7.51417mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox29">
+                          <rd:DefaultName>Textbox29</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Assigned To</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="Textbox6">
+                          <rd:DefaultName>Textbox6</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>Worked By</Value>
+                                  <Style>
+                                    <FontFamily>Arial</FontFamily>
+                                    <FontWeight>Bold</FontWeight>
+                                    <Color>White</Color>
+                                  </Style>
+                                </TextRun>
+                              </TextRuns>
+                              <Style>
+                                <TextAlign>Center</TextAlign>
+                              </Style>
+                            </Paragraph>
+                          </Paragraphs>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <BackgroundColor>#1b75ab</BackgroundColor>
+                            <VerticalAlign>Middle</VerticalAlign>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+                <TablixRow>
+                  <Height>9.13694mm</Height>
+                  <TablixCells>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="AssignedTo1">
+                          <rd:DefaultName>AssignedTo1</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <CanShrink>true</CanShrink>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!AssignedTo.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                            <ToggleItem>CustomerName</ToggleItem>
+                          </Visibility>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                    <TablixCell>
+                      <CellContents>
+                        <Textbox Name="WorkedBy">
+                          <rd:DefaultName>WorkedBy</rd:DefaultName>
+                          <CanGrow>true</CanGrow>
+                          <KeepTogether>true</KeepTogether>
+                          <Paragraphs>
+                            <Paragraph>
+                              <TextRuns>
+                                <TextRun>
+                                  <Value>=Fields!WorkedBy.Value</Value>
+                                  <Style />
+                                </TextRun>
+                              </TextRuns>
+                              <Style />
+                            </Paragraph>
+                          </Paragraphs>
+                          <Visibility>
+                            <Hidden>true</Hidden>
+                            <ToggleItem>CustomerName</ToggleItem>
+                          </Visibility>
+                          <Style>
+                            <Border>
+                              <Color>LightGrey</Color>
+                              <Style>Solid</Style>
+                            </Border>
+                            <PaddingLeft>2pt</PaddingLeft>
+                            <PaddingRight>2pt</PaddingRight>
+                            <PaddingTop>2pt</PaddingTop>
+                            <PaddingBottom>2pt</PaddingBottom>
+                          </Style>
+                        </Textbox>
+                      </CellContents>
+                    </TablixCell>
+                  </TablixCells>
+                </TablixRow>
+              </TablixRows>
+            </TablixBody>
+            <TablixColumnHierarchy>
+              <TablixMembers>
+                <TablixMember />
+                <TablixMember />
+              </TablixMembers>
+            </TablixColumnHierarchy>
+            <TablixRowHierarchy>
+              <TablixMembers>
+                <TablixMember>
+                  <TablixHeader>
+                    <Size>62.71469mm</Size>
+                    <CellContents>
+                      <Textbox Name="Textbox16">
+                        <rd:DefaultName>Textbox16</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>Customer Name</Value>
+                                <Style>
+                                  <FontFamily>Arial</FontFamily>
+                                  <FontWeight>Bold</FontWeight>
+                                  <Color>White</Color>
+                                </Style>
+                              </TextRun>
+                            </TextRuns>
+                            <Style>
+                              <TextAlign>Center</TextAlign>
+                            </Style>
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <BackgroundColor>#1b75ab</BackgroundColor>
+                          <VerticalAlign>Middle</VerticalAlign>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <TablixHeader>
+                        <Size>65.00499mm</Size>
+                        <CellContents>
+                          <Textbox Name="Textbox10">
+                            <rd:DefaultName>Textbox10</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <UserSort>
+                              <SortExpression>=Fields!ProjectName.Value</SortExpression>
+                              <SortExpressionScope>ProjectName</SortExpressionScope>
+                            </UserSort>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>Project Name</Value>
+                                    <Style>
+                                      <FontFamily>Arial</FontFamily>
+                                      <FontWeight>Bold</FontWeight>
+                                      <Color>White</Color>
+                                    </Style>
+                                  </TextRun>
+                                </TextRuns>
+                                <Style>
+                                  <TextAlign>Center</TextAlign>
+                                </Style>
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <BackgroundColor>#1b75ab</BackgroundColor>
+                              <VerticalAlign>Middle</VerticalAlign>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <TablixHeader>
+                            <Size>55.28301mm</Size>
+                            <CellContents>
+                              <Textbox Name="Textbox12">
+                                <rd:DefaultName>Textbox12</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>Project Module </Value>
+                                        <Style>
+                                          <FontFamily>Arial</FontFamily>
+                                          <FontWeight>Bold</FontWeight>
+                                          <Color>White</Color>
+                                        </Style>
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style>
+                                      <TextAlign>Center</TextAlign>
+                                    </Style>
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <BackgroundColor>#1b75ab</BackgroundColor>
+                                  <VerticalAlign>Middle</VerticalAlign>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <TablixHeader>
+                                <Size>73.4717mm</Size>
+                                <CellContents>
+                                  <Textbox Name="Textbox14">
+                                    <rd:DefaultName>Textbox14</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>Project Task</Value>
+                                            <Style>
+                                              <FontFamily>Arial</FontFamily>
+                                              <FontWeight>Bold</FontWeight>
+                                              <Color>White</Color>
+                                            </Style>
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style>
+                                          <TextAlign>Center</TextAlign>
+                                        </Style>
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <BackgroundColor>#1b75ab</BackgroundColor>
+                                      <VerticalAlign>Middle</VerticalAlign>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember />
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                    </TablixMember>
+                  </TablixMembers>
+                  <FixedData>true</FixedData>
+                  <KeepWithGroup>After</KeepWithGroup>
+                  <KeepTogether>true</KeepTogether>
+                </TablixMember>
+                <TablixMember>
+                  <Group Name="CustomerName">
+                    <GroupExpressions>
+                      <GroupExpression>=Fields!CustomerName.Value</GroupExpression>
+                    </GroupExpressions>
+                  </Group>
+                  <SortExpressions>
+                    <SortExpression>
+                      <Value>=Fields!CustomerName.Value</Value>
+                    </SortExpression>
+                  </SortExpressions>
+                  <TablixHeader>
+                    <Size>62.71469mm</Size>
+                    <CellContents>
+                      <Textbox Name="CustomerName">
+                        <rd:DefaultName>CustomerName</rd:DefaultName>
+                        <CanGrow>true</CanGrow>
+                        <KeepTogether>true</KeepTogether>
+                        <Paragraphs>
+                          <Paragraph>
+                            <TextRuns>
+                              <TextRun>
+                                <Value>=Fields!CustomerName.Value</Value>
+                                <Style />
+                              </TextRun>
+                            </TextRuns>
+                            <Style />
+                          </Paragraph>
+                        </Paragraphs>
+                        <Style>
+                          <Border>
+                            <Color>LightGrey</Color>
+                            <Style>Solid</Style>
+                          </Border>
+                          <PaddingLeft>2pt</PaddingLeft>
+                          <PaddingRight>2pt</PaddingRight>
+                          <PaddingTop>2pt</PaddingTop>
+                          <PaddingBottom>2pt</PaddingBottom>
+                        </Style>
+                      </Textbox>
+                    </CellContents>
+                  </TablixHeader>
+                  <TablixMembers>
+                    <TablixMember>
+                      <Group Name="ProjectName">
+                        <GroupExpressions>
+                          <GroupExpression>=Fields!ProjectName.Value</GroupExpression>
+                        </GroupExpressions>
+                      </Group>
+                      <SortExpressions>
+                        <SortExpression>
+                          <Value>=Fields!ProjectName.Value</Value>
+                        </SortExpression>
+                      </SortExpressions>
+                      <TablixHeader>
+                        <Size>65.00499mm</Size>
+                        <CellContents>
+                          <Textbox Name="ProjectName">
+                            <rd:DefaultName>ProjectName</rd:DefaultName>
+                            <CanGrow>true</CanGrow>
+                            <KeepTogether>true</KeepTogether>
+                            <Paragraphs>
+                              <Paragraph>
+                                <TextRuns>
+                                  <TextRun>
+                                    <Value>=Fields!ProjectName.Value</Value>
+                                    <Style />
+                                  </TextRun>
+                                </TextRuns>
+                                <Style />
+                              </Paragraph>
+                            </Paragraphs>
+                            <Style>
+                              <Border>
+                                <Color>LightGrey</Color>
+                                <Style>Solid</Style>
+                              </Border>
+                              <PaddingLeft>2pt</PaddingLeft>
+                              <PaddingRight>2pt</PaddingRight>
+                              <PaddingTop>2pt</PaddingTop>
+                              <PaddingBottom>2pt</PaddingBottom>
+                            </Style>
+                          </Textbox>
+                        </CellContents>
+                      </TablixHeader>
+                      <TablixMembers>
+                        <TablixMember>
+                          <Group Name="ProjectModuleName">
+                            <GroupExpressions>
+                              <GroupExpression>=Fields!ProjectModuleName.Value</GroupExpression>
+                            </GroupExpressions>
+                          </Group>
+                          <SortExpressions>
+                            <SortExpression>
+                              <Value>=Fields!ProjectModuleName.Value</Value>
+                            </SortExpression>
+                          </SortExpressions>
+                          <TablixHeader>
+                            <Size>55.28301mm</Size>
+                            <CellContents>
+                              <Textbox Name="ProjectModuleName">
+                                <rd:DefaultName>ProjectModuleName</rd:DefaultName>
+                                <CanGrow>true</CanGrow>
+                                <KeepTogether>true</KeepTogether>
+                                <Paragraphs>
+                                  <Paragraph>
+                                    <TextRuns>
+                                      <TextRun>
+                                        <Value>=Fields!ProjectModuleName.Value</Value>
+                                        <Style />
+                                      </TextRun>
+                                    </TextRuns>
+                                    <Style />
+                                  </Paragraph>
+                                </Paragraphs>
+                                <Style>
+                                  <Border>
+                                    <Color>LightGrey</Color>
+                                    <Style>Solid</Style>
+                                  </Border>
+                                  <PaddingLeft>2pt</PaddingLeft>
+                                  <PaddingRight>2pt</PaddingRight>
+                                  <PaddingTop>2pt</PaddingTop>
+                                  <PaddingBottom>2pt</PaddingBottom>
+                                </Style>
+                              </Textbox>
+                            </CellContents>
+                          </TablixHeader>
+                          <TablixMembers>
+                            <TablixMember>
+                              <Group Name="ProjectTaskId">
+                                <GroupExpressions>
+                                  <GroupExpression>=Fields!ProjectTaskId.Value</GroupExpression>
+                                </GroupExpressions>
+                              </Group>
+                              <SortExpressions>
+                                <SortExpression>
+                                  <Value>=Fields!ProjectTaskId.Value</Value>
+                                </SortExpression>
+                              </SortExpressions>
+                              <TablixHeader>
+                                <Size>73.4717mm</Size>
+                                <CellContents>
+                                  <Textbox Name="ProjectTaskName">
+                                    <rd:DefaultName>ProjectTaskName</rd:DefaultName>
+                                    <CanGrow>true</CanGrow>
+                                    <KeepTogether>true</KeepTogether>
+                                    <Paragraphs>
+                                      <Paragraph>
+                                        <TextRuns>
+                                          <TextRun>
+                                            <Value>=Fields!ProjectTaskName.Value</Value>
+                                            <Style />
+                                          </TextRun>
+                                        </TextRuns>
+                                        <Style />
+                                      </Paragraph>
+                                    </Paragraphs>
+                                    <Style>
+                                      <Border>
+                                        <Color>LightGrey</Color>
+                                        <Style>Solid</Style>
+                                      </Border>
+                                      <PaddingLeft>2pt</PaddingLeft>
+                                      <PaddingRight>2pt</PaddingRight>
+                                      <PaddingTop>2pt</PaddingTop>
+                                      <PaddingBottom>2pt</PaddingBottom>
+                                    </Style>
+                                  </Textbox>
+                                </CellContents>
+                              </TablixHeader>
+                              <TablixMembers>
+                                <TablixMember>
+                                  <Group Name="Details" />
+                                  <Visibility>
+                                    <Hidden>true</Hidden>
+                                    <ToggleItem>CustomerName</ToggleItem>
+                                  </Visibility>
+                                </TablixMember>
+                              </TablixMembers>
+                            </TablixMember>
+                          </TablixMembers>
+                        </TablixMember>
+                      </TablixMembers>
+                      <Visibility>
+                        <Hidden>true</Hidden>
+                        <ToggleItem>CustomerName</ToggleItem>
+                      </Visibility>
+                    </TablixMember>
+                  </TablixMembers>
+                </TablixMember>
+              </TablixMembers>
+            </TablixRowHierarchy>
+            <DataSetName>ProjectTaskListDS</DataSetName>
+            <Top>10.01889mm</Top>
+            <Left>4.0217mm</Left>
+            <Height>16.65111mm</Height>
+            <Width>413.48386mm</Width>
+            <ZIndex>1</ZIndex>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+            </Style>
+          </Tablix>
+          <Textbox Name="Textbox3">
+            <rd:DefaultName>Textbox2</rd:DefaultName>
+            <CanGrow>true</CanGrow>
+            <KeepTogether>true</KeepTogether>
+            <Paragraphs>
+              <Paragraph>
+                <TextRuns>
+                  <TextRun>
+                    <Value EvaluationMode="Constant">No Data Available</Value>
+                    <Style />
+                  </TextRun>
+                </TextRuns>
+                <Style />
+              </Paragraph>
+            </Paragraphs>
+            <Top>17.53306mm</Top>
+            <Left>4.0217mm</Left>
+            <Height>11.67694mm</Height>
+            <Width>55.32962mm</Width>
+            <ZIndex>2</ZIndex>
+            <Visibility>
+              <Hidden>=IIF(First(Fields!ProjectId.Value, "ProjectTaskListDS") Is Nothing Or First(Fields!ProjectModuleId.Value, "ProjectTaskListDS") Is Nothing Or First(Fields!ProjectTaskId.Value, "ProjectTaskListDS") Is Nothing, False, True)</Hidden>
+            </Visibility>
+            <Style>
+              <Border>
+                <Style>None</Style>
+              </Border>
+              <PaddingLeft>2pt</PaddingLeft>
+              <PaddingRight>2pt</PaddingRight>
+              <PaddingTop>2pt</PaddingTop>
+              <PaddingBottom>2pt</PaddingBottom>
+            </Style>
+          </Textbox>
+        </ReportItems>
+        <Height>32.385mm</Height>
+        <Style>
+          <Border>
+            <Style>None</Style>
+          </Border>
+        </Style>
+      </Body>
+      <Width>421.65417mm</Width>
+      <Page>
+        <PageHeight>29.7cm</PageHeight>
+        <PageWidth>21cm</PageWidth>
+        <LeftMargin>2cm</LeftMargin>
+        <RightMargin>2cm</RightMargin>
+        <TopMargin>2cm</TopMargin>
+        <BottomMargin>2cm</BottomMargin>
+        <ColumnSpacing>0.13cm</ColumnSpacing>
+        <Style />
+      </Page>
+    </ReportSection>
+  </ReportSections>
+  <ReportParameters>
+    <ReportParameter Name="Status">
+      <DataType>Integer</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>1</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Status</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>StatusDropDownDS</DataSetName>
+          <ValueField>StatusId</ValueField>
+          <LabelField>Status</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Customer">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>CustomerDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Customer Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>CustomerDropDownDS</DataSetName>
+          <ValueField>CustomerId</ValueField>
+          <LabelField>CustomerName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectStatus">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectStatusDropDownDS</DataSetName>
+          <ValueField>ProjectStatusId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <Prompt>Project Status</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectStatusDropDownDS</DataSetName>
+          <ValueField>ProjectStatusId</ValueField>
+          <LabelField>ProjectStatus</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="Projects">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Project Name</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectDropDownDS</DataSetName>
+          <ValueField>ProjectId</ValueField>
+          <LabelField>ProjectName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectModules">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectModuleDropDownDS</DataSetName>
+          <ValueField>ModuleId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Project Modules</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectModuleDropDownDS</DataSetName>
+          <ValueField>ModuleId</ValueField>
+          <LabelField>ModuleName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="ProjectTasks">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <DataSetReference>
+          <DataSetName>ProjectTaskDropDownDS</DataSetName>
+          <ValueField>TaskId</ValueField>
+        </DataSetReference>
+      </DefaultValue>
+      <AllowBlank>true</AllowBlank>
+      <Prompt>Project Task</Prompt>
+      <ValidValues>
+        <DataSetReference>
+          <DataSetName>ProjectTaskDropDownDS</DataSetName>
+          <ValueField>TaskId</ValueField>
+          <LabelField>TaskName</LabelField>
+        </DataSetReference>
+      </ValidValues>
+      <MultiValue>true</MultiValue>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+  </ReportParameters>
+  <ReportParametersLayout>
+    <GridLayoutDefinition>
+      <NumberOfColumns>6</NumberOfColumns>
+      <NumberOfRows>1</NumberOfRows>
+      <CellDefinitions>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Status</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>1</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Customer</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>2</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ProjectStatus</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>3</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>Projects</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>4</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ProjectModules</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>5</ColumnIndex>
+          <RowIndex>0</RowIndex>
+          <ParameterName>ProjectTasks</ParameterName>
+        </CellDefinition>
+      </CellDefinitions>
+    </GridLayoutDefinition>
+  </ReportParametersLayout>
+</Report>
