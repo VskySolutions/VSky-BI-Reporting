@@ -11,7 +11,7 @@
       <am:Name>PBIRB</am:Name>
       <am:Version>15.7.1813.16</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-06-11T17:18:56.0448732Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-06-18T09:35:40.3297097Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -30,12 +30,9 @@
     <DataSet Name="WeeklyProjectSummaryReportDataset">
       <Query>
         <DataSourceName>MeldepLiveV32</DataSourceName>
-        <QueryParameters>
-          <QueryParameter Name="@ToDate">
-            <Value>=Parameters!ToDate.Value</Value>
-          </QueryParameter>
-        </QueryParameters>
-        <CommandText>WITH ConcatenatedComments AS (
+        <CommandText>declare @FromDate as date='2026-06-1';
+declare @ToDate as date='2026-06-13';
+WITH ConcatenatedComments AS (
     SELECT 
         tl.ProjectId AS ProjectId,
         p.[Name] AS [ProjectName],
@@ -53,10 +50,10 @@
 	LEFT OUTER JOIN TimesheetLines tl ON t.Id = tl.TimesheetId
     LEFT OUTER JOIN Projects p ON p.Id= tl.ProjectId	
     LEFT OUTER JOIN DimDate dd ON dd.TheDate = t.TimesheetDate  
-    WHERE t.TimesheetDate &lt;= DATEADD(DAY, 1, dd.TheLastOfWeek)
-      AND t.TimesheetDate &gt; DATEADD(DAY, -7, DATEADD(DAY, 1, dd.TheLastOfWeek))
-      AND t.TimesheetDate &gt;= DATEFROMPARTS(YEAR(@ToDate), 1, 1)
-      AND t.TimesheetDate &lt;= @ToDate
+WHERE t.TimesheetDate &lt;= DATEADD(DAY, 1, dd.TheLastOfWeek)
+  AND t.TimesheetDate &gt; DATEADD(DAY, -7, DATEADD(DAY, 1, dd.TheLastOfWeek))
+  AND t.TimesheetDate &gt;= DATEFROMPARTS(YEAR(@ToDate), 1, 1)
+  AND t.TimesheetDate &lt;= @ToDate
 	  AND t.Deleted != 1 and tl.Deleted != 1
     GROUP BY 
         tl.ProjectId,
@@ -298,12 +295,9 @@ tl.[Description] AS ActivityDetails,
     <DataSet Name="ActualVsBillableHrsDataset">
       <Query>
         <DataSourceName>MeldepLiveV32</DataSourceName>
-        <QueryParameters>
-          <QueryParameter Name="@ToDate">
-            <Value>=Parameters!ToDate.Value</Value>
-          </QueryParameter>
-        </QueryParameters>
-        <CommandText>SELECT 
+        <CommandText>declare @FromDate as date='2026-06-1';
+declare @ToDate as date='2026-06-13';
+SELECT 
     tl.ProjectId,
     P.[Name] AS ProjectName,
   YEAR(T.TimesheetDate) [Year], 
@@ -320,7 +314,8 @@ LEFT OUTER JOIN
 WHERE 
     (T.Deleted = 0 OR T.Deleted IS NULL) 
     AND P.Name IS NOT NULL
-    AND T.TimesheetDate BETWEEN DATEFROMPARTS(YEAR(@ToDate), 1, 1) AND @ToDate
+   and t.TimesheetDate &gt;= @FromDate
+  AND t.TimesheetDate &lt;= @ToDate
 GROUP BY 
     tl.ProjectId, P.[Name], FORMAT(T.TimesheetDate, 'MMM yyyy'), YEAR(T.TimesheetDate), MONTH(T.TimesheetDate)
 ORDER BY 
@@ -2399,7 +2394,7 @@ ORDER BY CustomerName</CommandText>
                   <Width>1.10416in</Width>
                 </TablixColumn>
                 <TablixColumn>
-                  <Width>1.17708in</Width>
+                  <Width>1in</Width>
                 </TablixColumn>
               </TablixColumns>
               <TablixRows>
@@ -2462,15 +2457,15 @@ ORDER BY CustomerName</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="Textbox46">
-                          <rd:DefaultName>Textbox46</rd:DefaultName>
+                        <Textbox Name="Textbox5">
+                          <rd:DefaultName>Textbox5</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>Billable Hours</Value>
+                                  <Value>Billable Hrs</Value>
                                   <Style>
                                     <FontWeight>Bold</FontWeight>
                                   </Style>
@@ -2505,7 +2500,7 @@ ORDER BY CustomerName</CommandText>
                               <Style>Solid</Style>
                               <Width>1pt</Width>
                             </RightBorder>
-                            <BackgroundColor>#f2f1e5</BackgroundColor>
+                            <BackgroundColor>#bad1f2</BackgroundColor>
                             <PaddingLeft>2pt</PaddingLeft>
                             <PaddingRight>2pt</PaddingRight>
                             <PaddingTop>2pt</PaddingTop>
@@ -2578,7 +2573,7 @@ ORDER BY CustomerName</CommandText>
                             <Paragraph>
                               <TextRuns>
                                 <TextRun>
-                                  <Value>=IIF(IsNothing(Fields!BillableHrs.Value), "", Fields!BillableHrs.Value)</Value>
+                                  <Value>=Sum(Fields!BillableHrs.Value)</Value>
                                   <Style />
                                 </TextRun>
                               </TextRuns>
@@ -2677,8 +2672,8 @@ ORDER BY CustomerName</CommandText>
                     </TablixCell>
                     <TablixCell>
                       <CellContents>
-                        <Textbox Name="BillableHrs1">
-                          <rd:DefaultName>BillableHrs1</rd:DefaultName>
+                        <Textbox Name="Textbox7">
+                          <rd:DefaultName>Textbox7</rd:DefaultName>
                           <CanGrow>true</CanGrow>
                           <KeepTogether>true</KeepTogether>
                           <Paragraphs>
@@ -2759,7 +2754,8 @@ ORDER BY CustomerName</CommandText>
                           <Paragraph>
                             <TextRuns>
                               <TextRun>
-                                <Value>=Fields!MonthYear.Value</Value>
+                                <Value>=Format(Parameters!FromDate.Value, "MM-dd-yyyy") &amp; " - "
+ &amp; Format(Parameters!ToDate.Value, "MM-dd-yyyy")</Value>
                                 <Style>
                                   <FontWeight>Bold</FontWeight>
                                 </Style>
@@ -2997,7 +2993,7 @@ ORDER BY CustomerName</CommandText>
             </PageBreak>
             <PageName>Project Hrs</PageName>
             <Height>1.0625in</Height>
-            <Width>4.54291in</Width>
+            <Width>4.36583in</Width>
             <ZIndex>2</ZIndex>
             <Style>
               <Border>
@@ -3006,7 +3002,7 @@ ORDER BY CustomerName</CommandText>
             </Style>
           </Tablix>
         </ReportItems>
-        <Height>3.58678in</Height>
+        <Height>4.88678in</Height>
         <Style>
           <Border>
             <Style>None</Style>
@@ -3071,7 +3067,7 @@ ORDER BY CustomerName</CommandText>
       <DataType>DateTime</DataType>
       <DefaultValue>
         <Values>
-          <Value>1/1/2025 12:00:00 AM</Value>
+          <Value>=DateSerial(Year(Today()), Month(Today()), 1)</Value>
         </Values>
       </DefaultValue>
       <Prompt>From Date</Prompt>
@@ -3083,7 +3079,7 @@ ORDER BY CustomerName</CommandText>
       <DataType>DateTime</DataType>
       <DefaultValue>
         <Values>
-          <Value>1/31/2025 12:00:00 AM</Value>
+          <Value>=today()</Value>
         </Values>
       </DefaultValue>
       <Prompt>To Date</Prompt>
