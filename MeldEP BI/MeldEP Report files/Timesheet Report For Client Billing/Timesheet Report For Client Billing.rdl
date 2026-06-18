@@ -11,7 +11,7 @@
       <am:Name>PBIRB</am:Name>
       <am:Version>15.7.1813.16</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-06-18T09:35:40.3297097Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-06-18T16:08:25.1412874Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -30,9 +30,12 @@
     <DataSet Name="WeeklyProjectSummaryReportDataset">
       <Query>
         <DataSourceName>MeldepLiveV32</DataSourceName>
-        <CommandText>declare @FromDate as date='2026-06-1';
-declare @ToDate as date='2026-06-13';
-WITH ConcatenatedComments AS (
+        <QueryParameters>
+          <QueryParameter Name="@ToDate">
+            <Value>=Parameters!ToDate.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>WITH ConcatenatedComments AS (
     SELECT 
         tl.ProjectId AS ProjectId,
         p.[Name] AS [ProjectName],
@@ -295,9 +298,15 @@ tl.[Description] AS ActivityDetails,
     <DataSet Name="ActualVsBillableHrsDataset">
       <Query>
         <DataSourceName>MeldepLiveV32</DataSourceName>
-        <CommandText>declare @FromDate as date='2026-06-1';
-declare @ToDate as date='2026-06-13';
-SELECT 
+        <QueryParameters>
+          <QueryParameter Name="@FromDate">
+            <Value>=Parameters!FromDate.Value</Value>
+          </QueryParameter>
+          <QueryParameter Name="@ToDate">
+            <Value>=Parameters!ToDate.Value</Value>
+          </QueryParameter>
+        </QueryParameters>
+        <CommandText>SELECT 
     tl.ProjectId,
     P.[Name] AS ProjectName,
   YEAR(T.TimesheetDate) [Year], 
@@ -1048,6 +1057,9 @@ ORDER BY CustomerName</CommandText>
             <Top>1.09028in</Top>
             <Height>1.43052in</Height>
             <Width>5.60416in</Width>
+            <Visibility>
+              <Hidden>=IIF(Parameters!SelectView.Value = "DetailedSummary", False, True)</Hidden>
+            </Visibility>
             <Style>
               <Border>
                 <Style>Solid</Style>
@@ -2306,6 +2318,9 @@ ORDER BY CustomerName</CommandText>
             <Height>0.79861in</Height>
             <Width>12.43875in</Width>
             <ZIndex>1</ZIndex>
+            <Visibility>
+              <Hidden>=IIF(Parameters!SelectView.Value = "TimesheetDetails", False, True)</Hidden>
+            </Visibility>
             <Style>
               <Border>
                 <Style>Solid</Style>
@@ -2995,6 +3010,9 @@ ORDER BY CustomerName</CommandText>
             <Height>1.0625in</Height>
             <Width>4.36583in</Width>
             <ZIndex>2</ZIndex>
+            <Visibility>
+              <Hidden>=IIF(Parameters!SelectView.Value = "HoursSummary", False, True)</Hidden>
+            </Visibility>
             <Style>
               <Border>
                 <Style>None</Style>
@@ -3070,7 +3088,7 @@ ORDER BY CustomerName</CommandText>
           <Value>=DateSerial(Year(Today()), Month(Today()), 1)</Value>
         </Values>
       </DefaultValue>
-      <Prompt>From Date</Prompt>
+      <Prompt>From Timesheet Date</Prompt>
       <cl:ComponentMetadata>
         <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
       </cl:ComponentMetadata>
@@ -3082,7 +3100,35 @@ ORDER BY CustomerName</CommandText>
           <Value>=today()</Value>
         </Values>
       </DefaultValue>
-      <Prompt>To Date</Prompt>
+      <Prompt>To Timesheet Date</Prompt>
+      <cl:ComponentMetadata>
+        <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
+      </cl:ComponentMetadata>
+    </ReportParameter>
+    <ReportParameter Name="SelectView">
+      <DataType>String</DataType>
+      <DefaultValue>
+        <Values>
+          <Value>HoursSummary</Value>
+        </Values>
+      </DefaultValue>
+      <Prompt>Select View</Prompt>
+      <ValidValues>
+        <ParameterValues>
+          <ParameterValue>
+            <Value>HoursSummary</Value>
+            <Label>Actual V/S Billable</Label>
+          </ParameterValue>
+          <ParameterValue>
+            <Value>DetailedSummary</Value>
+            <Label>Hours Details</Label>
+          </ParameterValue>
+          <ParameterValue>
+            <Value>TimesheetDetails</Value>
+            <Label>Timesheet details</Label>
+          </ParameterValue>
+        </ParameterValues>
+      </ValidValues>
       <cl:ComponentMetadata>
         <cl:HideUpdateNotifications>true</cl:HideUpdateNotifications>
       </cl:ComponentMetadata>
@@ -3112,6 +3158,11 @@ ORDER BY CustomerName</CommandText>
           <ColumnIndex>3</ColumnIndex>
           <RowIndex>0</RowIndex>
           <ParameterName>ToDate</ParameterName>
+        </CellDefinition>
+        <CellDefinition>
+          <ColumnIndex>0</ColumnIndex>
+          <RowIndex>1</RowIndex>
+          <ParameterName>SelectView</ParameterName>
         </CellDefinition>
       </CellDefinitions>
     </GridLayoutDefinition>
