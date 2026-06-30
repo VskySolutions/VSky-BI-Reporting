@@ -11,7 +11,7 @@
       <am:Name>PBIRB</am:Name>
       <am:Version>15.7.1813.16</am:Version>
     </am:UpdatedBy>
-    <am:LastModifiedTimestamp>2026-06-11T17:04:39.8396431Z</am:LastModifiedTimestamp>
+    <am:LastModifiedTimestamp>2026-06-30T12:15:20.8848852Z</am:LastModifiedTimestamp>
   </am:AuthoringMetadata>
   <df:DefaultFontFamily>Segoe UI</df:DefaultFontFamily>
   <AutoRefresh>0</AutoRefresh>
@@ -221,6 +221,7 @@ WHERE
 FROM Projects P
 WHERE
 	P.Deleted!=1 
+and p.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 ORDER BY Status</CommandText>
       </Query>
       <Fields>
@@ -303,6 +304,7 @@ ORDER BY CustomerName</CommandText>
     FROM Projects P
     JOIN VW_CustomerProjectList CPL ON P.Id = CPL.Id
     WHERE P.Deleted != 1
+and p.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 )
 SELECT PD.ProjectId, PD.Project
 FROM ProjectDetailsList PD
@@ -329,6 +331,7 @@ ORDER BY Project</CommandText>
 from dropdown dd
 left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
 where dd.deleted!=1
+and ddt.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 and ddt.type='Project Status'
 order by projectstatus</CommandText>
       </Query>
@@ -352,6 +355,7 @@ order by projectstatus</CommandText>
 from dropdown dd
 left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
 where dd.deleted!=1
+and ddt.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 and ddt.type='Project Priorities'
 order by projectpriority</CommandText>
       </Query>
@@ -375,6 +379,7 @@ order by projectpriority</CommandText>
 from dropdown dd
 left join dropdowntype ddt on ddt.id=dd.dropdowntypeid and ddt.deleted!=1
 where dd.deleted!=1
+and ddt.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 and ddt.type='Project Type'
 order by projecttype</CommandText>
       </Query>
@@ -401,6 +406,7 @@ SELECT
 	ddt.Type as projectcategory
 FROM DropDownType ddt 
 Where ddt.Groupname='ProjectCategory'
+and ddt.siteid='04086f10-8f09-4e0c-b5c0-c827a244addd' ---Vsky SiteID
 and ddt.deleted!=1</CommandText>
       </Query>
       <Fields>
